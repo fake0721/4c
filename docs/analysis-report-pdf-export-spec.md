@@ -1,0 +1,13 @@
+# Analysis Report PDF Export Spec
+- Scope: analysis report PDF export only.
+- Goal: make the PDF button download a real .pdf file directly, like the current Word export, without opening a blank print window.
+- Rules:
+  - Keep the existing analysis report page structure unchanged.
+  - Reuse the current hydrated analysis-report payload fields.
+  - Use browser-side html2canvas + jsPDF to generate the PDF file directly.
+  - Render a dedicated off-screen export container instead of scraping the live page layout.
+  - Show a clear Chinese alert if report data or PDF libraries are unavailable.
+- Compatibility:
+  - Do not change the Word export behavior.
+  - Keep the existing report metadata, summary, type distribution, and detail rows in the PDF output.
+  - Limit this refactor to the analysis report export module only.

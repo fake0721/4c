@@ -1,0 +1,35 @@
+﻿[
+  {
+    "name": "Cisco BGP MD5 Authentication Failures",
+    "description": "检测 Cisco 设备的 BGP MD5 认证失败日志，当前系统尚未提供 network 来源，先暂缓导入。",
+    "pattern": ":179.*IP-TCP-3-BADAUTH|IP-TCP-3-BADAUTH.*:179",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "network_auth_failure",
+    "riskLevel": "low",
+    "sourceTypes": ["network", "cisco", "bgp"],
+    "enabled": true
+  },
+  {
+    "name": "Cisco LDP MD5 Authentication Failures",
+    "description": "检测 Cisco 设备的 LDP MD5 认证失败日志，当前系统尚未提供 network 来源，先暂缓导入。",
+    "pattern": "LDP.*(SOCKET_TCP_PACKET_MD5_AUTHEN_FAIL|TCPMD5AuthenFail)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "network_auth_failure",
+    "riskLevel": "low",
+    "sourceTypes": ["network", "cisco", "ldp"],
+    "enabled": true
+  },
+  {
+    "name": "Huawei BGP MD5 Authentication Failures",
+    "description": "检测华为设备的 BGP MD5 认证失败日志，当前系统尚未提供 network 来源，先暂缓导入。",
+    "pattern": ":179.*BGP_AUTH_FAILED|BGP_AUTH_FAILED.*:179",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "network_auth_failure",
+    "riskLevel": "low",
+    "sourceTypes": ["network", "huawei", "bgp"],
+    "enabled": true
+  }
+]

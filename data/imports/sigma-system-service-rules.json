@@ -1,0 +1,200 @@
+﻿[
+  {
+    "name": "Sysmon Configuration Error",
+    "description": "检测 Sysmon 配置更新阶段的关键错误消息，可能导致日志能力受影响。",
+    "pattern": "Failed to open service configuration with error|Failed to connect to the driver to update configuration",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "security_service_error",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Windows Service Terminated With Error",
+    "description": "检测 Service Control Manager 记录的服务错误终止事件。",
+    "pattern": "Provider_Name\\s*[:=]\\sService Control Manager.*EventID\\s*[:=]\\s7023|EventID\\s*[:=]\\s7023",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "service_termination_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Important Windows Service Terminated With Error",
+    "description": "检测关键安全相关服务错误终止。",
+    "pattern": "EventID\\s*[:=]\\s7023.*(Antivirus|Firewall|Application Guard|BitLocker Drive Encryption Service|Encrypting File System|Microsoft Defender|Threat Protection|Windows Event Log|windefend|mpssvc|Sense|EventLog|BDESVC|EFS)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "critical_service_termination",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Important Windows Service Terminated Unexpectedly",
+    "description": "检测关键服务意外终止，当前规则重点是 Message Queuing / MSMQ。",
+    "pattern": "EventID\\s*[:=]\\s7034.*(Message Queuing|MSMQ|msmq)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "critical_service_unexpected_termination",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Windows Update Error",
+    "description": "检测 Windows 更新相关错误。",
+    "pattern": "Provider_Name\\s*[:=]\\sMicrosoft-Windows-WindowsUpdateClient.*EventID\\s*[:=]\\s(16|20|24|213|217)|EventID\\s*[:=]\\s(16|20|24|213|217)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "system_update_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Crash Dump Created By Operating System",
+    "description": "检测系统级崩溃后生成 dump 的事件。",
+    "pattern": "Provider_Name\\s*[:=]\\sMicrosoft-Windows-WER-SystemErrorReporting.*EventID\\s*[:=]\\s1001|BugCheck|dump",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "system_crash_dump",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Sysmon Application Crashed",
+    "description": "检测 Sysmon 进程崩溃提示。",
+    "pattern": "Provider_Name\\s*[:=]\\sApplication Popup.*EventID\\s*[:=]\\s26.*(sysmon64\\.exe - Application Error|sysmon\\.exe - Application Error)|sysmon(64)?\\.exe - Application Error",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "security_service_crash",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "DHCP Server Failed Loading CallOut DLL",
+    "description": "检测 DHCP 服务加载 CallOut DLL 失败。",
+    "pattern": "Provider_Name\\s*[:=]\\sMicrosoft-Windows-DHCP-Server.*EventID\\s*[:=]\\s(1031|1032|1034)|EventID\\s*[:=]\\s(1031|1032|1034)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "service_plugin_load_failure",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "DNS Server Failed Loading ServerLevelPluginDLL",
+    "description": "检测 DNS 服务器插件 DLL 加载失败。",
+    "pattern": "EventID\\s*[:=]\\s(150|770|771)|ServerLevelPluginDLL|plugin DLL.*could not be loaded",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "service_plugin_load_failure",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Failed DNS Zone Transfer",
+    "description": "检测 DNS 区域传送失败。",
+    "pattern": "EventID\\s*[:=]\\s6004|zone transfer failed|non-existent or non-authoritative zone",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "dns_service_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Windows Defender Firewall Failed To Load Group Policy",
+    "description": "检测 Windows Defender Firewall 服务加载组策略失败。",
+    "pattern": "EventID\\s*[:=]\\s2009|Windows Defender Firewall service failed to load Group Policy",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "firewall_service_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Windows Defender Real-Time Protection Failure Restart",
+    "description": "检测 Defender 实时防护错误或异常重启。",
+    "pattern": "EventID\\s*[:=]\\s(3002|3007)|Real-Time Protection feature has encountered an error and failed|Real-time Protection feature has restarted",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "security_service_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Microsoft Malware Protection Engine Crash",
+    "description": "检测 MsMpEng.exe 与 mpengine.dll 相关的应用崩溃。",
+    "pattern": "Provider_Name\\s*[:=]\\sApplication Error.*EventID\\s*[:=]\\s1000.*MsMpEng\\.exe.*mpengine\\.dll|MsMpEng\\.exe.*mpengine\\.dll",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "security_engine_crash",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Microsoft Malware Protection Engine Crash WER",
+    "description": "检测 WER 侧记录的 MsMpEng / mpengine 崩溃事件。",
+    "pattern": "Provider_Name\\s*[:=]\\sWindows Error Reporting.*EventID\\s*[:=]\\s1001.*MsMpEng\\.exe.*mpengine\\.dll|MsMpEng\\.exe.*mpengine\\.dll",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "security_engine_crash",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "LSASS Process Crashed Application",
+    "description": "检测 LSASS 崩溃事件。",
+    "pattern": "Provider_Name\\s*[:=]\\sApplication Error.*EventID\\s*[:=]\\s1000.*AppName\\s*[:=]\\slsass\\.exe.*ExceptionCode\\s*[:=]\\sc0000001|lsass\\.exe.*c0000001",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "critical_process_crash",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Suspicious OpenSSH Daemon Error",
+    "description": "检测 SSHD 中典型致命错误模式。",
+    "pattern": "unexpected internal error|unknown or unsupported key type|invalid certificate signing key|invalid elliptic curve value|incorrect signature|error in libcrypto|unexpected bytes remain after decoding|fatal: buffer_get_string: bad string|Local: crc32 compensation attack|bad client public DH value|Corrupted MAC on input",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "ssh_service_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Suspicious VSFTPD Error Messages",
+    "description": "检测 VSFTPD 的异常或致命错误模式。",
+    "pattern": "Connection refused: too many sessions for this address\\.|Connection refused: tcp_wrappers denial\\.|Bad HTTP verb\\.|port and pasv both active|pasv and port both active|Transfer done \\(but failed to open directory\\)\\.|Could not set file modification time\\.|bug: pid active in ptrace_sandbox_free|PTRACE_SETOPTIONS failure|weird status:|couldn't handle sandbox event|syscall .* out of bounds|syscall not permitted:|syscall validate failed:|Input line too long\\.|poor buffer accounting in str_netfd_alloc|vsf_sysutil_read_loop",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "ftp_service_error",
+    "riskLevel": "medium",
+    "sourceTypes": ["system"],
+    "enabled": true
+  },
+  {
+    "name": "Suspicious Named Error",
+    "description": "检测 named DNS 服务中的关键错误模式。",
+    "pattern": "dropping source port zero packet from|denied AXFR from|exiting \\(due to fatal error\\)",
+    "matchType": "regex",
+    "flags": "i",
+    "errorType": "dns_service_error",
+    "riskLevel": "high",
+    "sourceTypes": ["system"],
+    "enabled": true
+  }
+]

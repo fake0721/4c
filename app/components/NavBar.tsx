@@ -10,7 +10,7 @@ export default function NavBar() {
           <span className="material-symbols-outlined text-[#1F4E79] mr-2" style={{ fontSize: '24px' }}>
             bolt
           </span>
-          智能日志分析系统
+          运维智析平台
         </Link>
 
         <div className="hidden md:flex items-center gap-8 font-label text-sm uppercase tracking-widest"></div>

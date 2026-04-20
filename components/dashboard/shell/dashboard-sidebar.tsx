@@ -19,7 +19,7 @@ export function DashboardSidebar() {
   return (
     <aside className="absolute left-0 top-0 z-[60] hidden h-full w-64 flex-col border-r border-white/5 bg-[#3A6A9A] shadow-[4px_0_24px_rgba(0,0,0,0.24)] md:flex">
       <div className="px-6 py-8">
-        <h1 className="font-headline text-xl font-black tracking-tight text-white">智能日志分析系统</h1>
+        <h1 className="font-headline text-xl font-black tracking-tight text-white">运维智析平台</h1>
       </div>
       <nav className="mt-4 flex flex-col space-y-2 px-4">
         {navItems.map((item) => {

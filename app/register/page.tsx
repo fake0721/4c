@@ -12,7 +12,7 @@ export default function RegisterPage() {
       <nav className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between border-b border-white/20 bg-white/10 px-8 py-4 backdrop-blur-xl">
         <div className="flex items-center gap-2 text-xl font-headline font-extrabold">
           <span className="material-symbols-outlined text-[#1F4E79]">bolt</span>
-          智能日志分析系统
+          运维智析平台
         </div>
         <Link href="/" className="text-sm text-[#5F6B7A] transition hover:text-[#1F2A37]">返回首页</Link>
       </nav>

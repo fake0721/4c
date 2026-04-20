@@ -66,7 +66,7 @@ export async function getIncidentsPageData(): Promise<IncidentsPageData> {
     return EMPTY_INCIDENTS_DATA;
   }
 
-  const [errorsResult, logsResult, analysesResult] = await Promise.all([
+  const [errorsResult, logsResult, analysesResult, reviewCasesResult] = await Promise.all([
     supabase
       .from("log_errors")
       .select("id, log_id, error_type, raw_text, review_status")
@@ -78,6 +78,12 @@ export async function getIncidentsPageData(): Promise<IncidentsPageData> {
       .from("analysis_results")
       .select("log_error_id, risk_level, repair_suggestion")
       .eq("user_id", user.id)
+      .limit(400),
+    supabase
+      .from("review_cases")
+      .select("log_error_id, review_status, updated_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
       .limit(400),
   ]);
 
@@ -92,6 +98,13 @@ export async function getIncidentsPageData(): Promise<IncidentsPageData> {
       risk_level: item.risk_level,
       repair_suggestion: item.repair_suggestion,
     });
+  }
+
+  const reviewStatusByErrorId = new Map<string, string>();
+  for (const item of reviewCasesResult.data ?? []) {
+    if (!reviewStatusByErrorId.has(item.log_error_id)) {
+      reviewStatusByErrorId.set(item.log_error_id, String(item.review_status ?? "pending"));
+    }
   }
 
   const now = new Date();
@@ -124,7 +137,7 @@ export async function getIncidentsPageData(): Promise<IncidentsPageData> {
   return {
     rows: (errorsResult.data ?? []).map((item) => {
       const analysis = analysisByErrorId.get(item.id);
-      const reviewStatus = item.review_status ?? "pending";
+      const reviewStatus = reviewStatusByErrorId.get(item.id) ?? item.review_status ?? "pending";
       const stageLabel = reviewStatus === "completed" ? "已完成" : reviewStatus === "skipped" ? "已跳过" : "待复核";
 
       return {

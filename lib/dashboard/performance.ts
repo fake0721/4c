@@ -142,6 +142,50 @@ function buildModeScopedDemoData(
     };
   });
 
+  const ruleMode = modes.find((item) => item.mode === "rule_only");
+  const modelMode = modes.find((item) => item.mode === "model_only");
+  const hybridMode = modes.find((item) => item.mode === "hybrid");
+  const bestF1Mode = [...modes].sort((a, b) => b.f1 - a.f1)[0];
+
+  const recommendationTitle = hybridMode ? "默认推荐：Hybrid" : `默认推荐：${toModeLabel(modes[0].mode)}`;
+  const recommendationSummary = hybridMode
+    ? `在最近 ${days} 天窗口下，Hybrid 在可见模式中呈现更均衡的准确率、召回率与延迟表现，适合作为默认运行路径。`
+    : `当前窗口仅出现 ${toModeLabel(modes[0].mode)} 模式，暂不具备完整三模式横向对比条件。`;
+
+  const recommendationEvidence = hybridMode
+    ? [
+        ruleMode
+          ? `相较 Rule Only，Hybrid 准确率 ${hybridMode.accuracy >= ruleMode.accuracy ? "提升" : "下降"} ${Math.abs(hybridMode.accuracy - ruleMode.accuracy).toFixed(1)} 个点（${ruleMode.accuracy.toFixed(1)}% → ${hybridMode.accuracy.toFixed(1)}%）。`
+          : `当前窗口已纳入 Hybrid 样本，准确率 ${hybridMode.accuracy.toFixed(1)}%。`,
+        ruleMode
+          ? `相较 Rule Only，Hybrid 召回率 ${hybridMode.recall >= ruleMode.recall ? "提升" : "下降"} ${Math.abs(hybridMode.recall - ruleMode.recall).toFixed(1)} 个点（${ruleMode.recall.toFixed(1)}% → ${hybridMode.recall.toFixed(1)}%）。`
+          : `Hybrid 召回率为 ${hybridMode.recall.toFixed(1)}%，覆盖能力稳定。`,
+        modelMode
+          ? `相较 Model Only，Hybrid 平均延迟${hybridMode.latencyMs <= modelMode.latencyMs ? "降低" : "增加"} ${Math.abs(modelMode.latencyMs - hybridMode.latencyMs).toFixed(1)}ms（${modelMode.latencyMs.toFixed(1)}ms ↔ ${hybridMode.latencyMs.toFixed(1)}ms）。`
+          : `在当前可见模式中，Hybrid 的 F1 为 ${hybridMode.f1.toFixed(3)}，综合平衡更优。`,
+      ]
+    : [
+        `${toModeLabel(modes[0].mode)} 已形成窗口样本，当前准确率 ${modes[0].accuracy.toFixed(1)}%。`,
+        `${toModeLabel(modes[0].mode)} 当前召回率 ${modes[0].recall.toFixed(1)}%，平均延迟 ${modes[0].latencyMs.toFixed(1)}ms。`,
+        "建议补充 Rule Only / Model Only / Hybrid 的对照运行后，再给出默认模式结论。",
+      ];
+
+  const recommendationFootnote = hybridMode
+    ? `证据基于当前窗口已出现模式的量化对比；当前可见模式：${availableModes.map((mode) => toModeLabel(mode)).join("、")}。`
+    : "当前为单模式视角，推荐结论仅用于临时运行参考。";
+
+  const insights = hybridMode
+    ? [
+        `当前可见模式中，${bestF1Mode.modeLabel} 的 F1 最高（${bestF1Mode.f1.toFixed(3)}）。`,
+        `Hybrid 当前待复核压力为 ${pendingReviewCount}，建议持续补样本验证稳定性。`,
+        "建议在相同日志批次下继续做三模式对照，观察结论是否持续一致。",
+      ]
+    : [
+        `当前窗口仅检测到 ${toModeLabel(modes[0].mode)} 模式，已展示真实聚合结果。`,
+        "页面已隐藏无样本模式，避免误导性的空对比。",
+        "补齐另外两种模式样本后，将自动升级为完整对比证据。",
+      ];
+
   const primaryMode = modes.find((item) => item.mode === "hybrid") ?? modes[0];
   const primaryProfile = DEMO_MODE_PROFILES[primaryMode.mode];
   const avgAccuracy = modes.reduce((sum, item) => sum + item.accuracy, 0) / modes.length;
@@ -226,20 +270,12 @@ function buildModeScopedDemoData(
       status: item.mode === primaryMode.mode ? "recommended" : item.mode === "model_only" ? "high_load" : "baseline",
     })),
     recommendation: {
-      title: `默认推荐：${primaryMode.modeLabel}`,
-      summary: "当前窗口期仍在持续积累样本，页面先按已出现模式给出对比结果，便于观察模式差异。",
-      evidence: [
-        `检测到已出现模式：${availableModes.map((mode) => toModeLabel(mode)).join("、")}`,
-        "无分析记录时页面仅展示空状态，不展示对比卡片。",
-        "仅展示已出现模式的数据，未出现模式不展示。",
-      ],
-      footnote: "样本规模继续增长后，指标将自动更新并稳定收敛。",
+      title: recommendationTitle,
+      summary: recommendationSummary,
+      evidence: recommendationEvidence,
+      footnote: recommendationFootnote,
     },
-    insights: [
-      "当前已按窗口模式分布生成可比较指标。",
-      "建议继续补充日志分析任务，优先产生跨模式真实样本。",
-      "当窗口内样本更充分时，对比结论会进一步稳定。",
-    ],
+    insights,
     pendingReviewCount,
     dataSource: {
       kind: "demo",

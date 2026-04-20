@@ -4,6 +4,7 @@ type ReviewQueueProps = {
   queue: ReviewItem[];
   activeId: string | null;
   activeIndex: number;
+  exitingId: string | null;
   onSelect: (id: string) => void;
 };
 
@@ -40,7 +41,7 @@ function formatConfidence(value: number) {
   return `${Math.round(value * 100)}%`;
 }
 
-export function ReviewQueue({ queue, activeId, activeIndex, onSelect }: ReviewQueueProps) {
+export function ReviewQueue({ queue, activeId, activeIndex, exitingId, onSelect }: ReviewQueueProps) {
   return (
     <div className="flex w-full flex-col overflow-y-auto border-r border-[#DCE4EE] bg-[#F3F5F8] lg:w-[34%]">
       <div className="sticky top-0 z-10 flex items-end justify-between border-b border-[#DCE4EE] bg-[#F3F5F8]/95 p-6 backdrop-blur-sm">
@@ -62,6 +63,7 @@ export function ReviewQueue({ queue, activeId, activeIndex, onSelect }: ReviewQu
         ) : (
           queue.map((item) => {
             const active = item.id === activeId;
+            const exiting = item.id === exitingId;
             const riskChip = toRiskChip(item);
             const updatedAt = new Date(item.updatedAt).toLocaleTimeString("zh-CN", { hour12: false });
 
@@ -69,8 +71,16 @@ export function ReviewQueue({ queue, activeId, activeIndex, onSelect }: ReviewQu
               <button
                 key={item.id}
                 type="button"
-                onClick={() => onSelect(item.id)}
+                onClick={() => {
+                  if (!exiting) {
+                    onSelect(item.id);
+                  }
+                }}
                 className={`group relative w-full overflow-hidden rounded-2xl border p-5 text-left transition-all ${
+                  exiting
+                    ? "pointer-events-none scale-[0.98] opacity-0 -translate-y-1"
+                    : ""
+                } ${
                   active
                     ? "border-[#2F5F8E]/35 bg-[#FFFFFF] shadow-[0_0_15px_rgba(31,78,121,0.15)]"
                     : "border-[#DCE4EE] bg-[#F8FAFD] shadow-[0_4px_12px_rgba(31,42,55,0.05)] hover:bg-[#EEF3F9]"

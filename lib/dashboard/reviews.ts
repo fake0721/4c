@@ -174,9 +174,37 @@ export async function getReviewsPageData(): Promise<ReviewsPageData> {
     };
   });
 
+  const dedupedByIncident = new Map<string, ReviewItem>();
+  for (const item of rows) {
+    const key = item.incidentId;
+    const existing = dedupedByIncident.get(key);
+
+    if (!existing) {
+      dedupedByIncident.set(key, item);
+      continue;
+    }
+
+    // Prefer non-pending status to avoid showing already reviewed incidents in queue.
+    const existingPending = existing.reviewStatus === "pending";
+    const incomingPending = item.reviewStatus === "pending";
+    if (existingPending && !incomingPending) {
+      dedupedByIncident.set(key, item);
+      continue;
+    }
+
+    // If same status bucket, keep the latest updated record.
+    if (new Date(item.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
+      dedupedByIncident.set(key, item);
+    }
+  }
+
+  const normalizedRows = Array.from(dedupedByIncident.values()).sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+
   return {
-    queue: rows.filter((item) => item.reviewStatus === "pending"),
-    historyCases: rows.filter((item) => item.reviewStatus !== "pending"),
-    pendingReviewCount: rows.filter((item) => item.reviewStatus === "pending").length,
+    queue: normalizedRows.filter((item) => item.reviewStatus === "pending"),
+    historyCases: normalizedRows.filter((item) => item.reviewStatus !== "pending"),
+    pendingReviewCount: normalizedRows.filter((item) => item.reviewStatus === "pending").length,
   };
 }

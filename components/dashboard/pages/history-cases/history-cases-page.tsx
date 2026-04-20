@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 import type { HistoryCaseRow, HistoryCasesPageData } from "@/lib/dashboard/history-cases";
 
@@ -12,18 +11,21 @@ type HistoryCasesPageProps = {
 const PAGE_SIZE = 12;
 
 export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
-  const router = useRouter();
+  const [rows, setRows] = useState(data.rows);
+  const [deletingRowId, setDeletingRowId] = useState<string | null>(null);
+  const [confirmDeleteRow, setConfirmDeleteRow] = useState<HistoryCaseRow | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [riskFilter, setRiskFilter] = useState("全部级别");
   const [typeFilter, setTypeFilter] = useState("全部类型");
   const [statusFilter, setStatusFilter] = useState("全部状态");
   const [keyword, setKeyword] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const typeOptions = useMemo(() => ["全部类型", ...Array.from(new Set(data.rows.map((item) => item.typeLabel)))], [data.rows]);
+  const typeOptions = useMemo(() => ["全部类型", ...Array.from(new Set(rows.map((item) => item.typeLabel)))], [rows]);
 
   const filteredRows = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
-    return data.rows.filter((row) => {
+    return rows.filter((row) => {
       const riskMatch = riskFilter === "全部级别" || row.riskLabel === riskFilter;
       const typeMatch = typeFilter === "全部类型" || row.typeLabel === typeFilter;
       const statusMatch = statusFilter === "全部状态" || row.reviewStatusLabel === statusFilter;
@@ -35,7 +37,41 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
         row.snippet.toLowerCase().includes(normalizedKeyword);
       return riskMatch && typeMatch && statusMatch && keywordMatch;
     });
-  }, [data.rows, keyword, riskFilter, statusFilter, typeFilter]);
+  }, [rows, keyword, riskFilter, statusFilter, typeFilter]);
+
+  async function handleDeleteReviewCase(reviewCaseId: string) {
+    if (!reviewCaseId || deletingRowId) {
+      return;
+    }
+
+    setDeletingRowId(reviewCaseId);
+    try {
+      const response = await fetch("/api/inner-data", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "history-case-delete",
+          reviewCaseId,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || "删除失败，请稍后重试。");
+      }
+
+      setRows((current) => current.filter((item) => item.id !== reviewCaseId));
+      setNotice("复盘记录已删除。");
+      window.setTimeout(() => setNotice(null), 1800);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "删除失败，请稍后重试。");
+      window.setTimeout(() => setNotice(null), 2200);
+    } finally {
+      setDeletingRowId(null);
+      setConfirmDeleteRow(null);
+    }
+  }
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -77,99 +113,6 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
         <OpsMetricCard label="漏报库条目" value={data.historicalMissedOps.historicalMissedTotal} tone="text-[#6A8F61]" hint={`已人工确认 ${data.historicalMissedOps.verifiedHistoricalMissedTotal} 条`} />
       </section>
 
-      <section className="mb-8 grid grid-cols-1 items-start gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="glass-panel rounded-2xl border border-[#DCE4EE] p-6 shadow-[0_10px_24px_rgba(31,59,53,0.05)]">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-label text-[10px] uppercase tracking-widest text-[#7B8898]">漏报库运营状态</p>
-              <h2 className="mt-2 text-xl font-bold text-[#1F2A37]">历史漏报闭环已接通，等待真实复核数据进入</h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => router.refresh()}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#CBD7E4] bg-[#F4FFFB] text-[#1F4E79] transition hover:border-[#C9AE86] hover:bg-[#F2E7D7]"
-              aria-label="刷新漏报库运营状态"
-              title="刷新漏报库运营状态"
-            >
-              <span className="material-symbols-outlined text-2xl">cycle</span>
-            </button>
-          </div>
-          <div className="mt-4 space-y-2 text-sm leading-7 text-[#5F6B7A]">
-            <p>{data.historicalMissedOps.completedReviews > 0 ? `当前已有 ${data.historicalMissedOps.completedReviews} 条复核完成，其中 ${data.historicalMissedOps.backfillEligibleReviews} 条具备漏报回补条件。` : "当前还没有 completed review，所以漏报库还不会自动长数据。"}</p>
-            <p>{data.historicalMissedOps.historicalMissedTotal > 0 ? `漏报库目前已有 ${data.historicalMissedOps.historicalMissedTotal} 条，可在后续同类问题中优先召回。` : "一旦开始完成真实复核，系统就会自动尝试把根因与方案沉淀进 historical_missed_cases。"}</p>
-          </div>
-
-          <div className="mt-6 rounded-2xl border border-[#E8DCCB] bg-[#F4FFFB] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <p className="font-label text-[10px] uppercase tracking-widest text-[#7B8898]">最近可回补案例</p>
-                <p className="mt-1 text-xs text-[#7B8898]">这些复核结果已经具备沉淀到漏报库的条件。</p>
-              </div>
-              <span className="material-symbols-outlined text-xl text-[#1F4E79]">playlist_add_check</span>
-            </div>
-            {data.recentBackfillCases.length > 0 ? (
-              <div className="space-y-2">
-                {data.recentBackfillCases.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-white/60 bg-white/70 px-3 py-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-[#1F2A37]">{item.title}</p>
-                        <p className="mt-1 text-xs text-[#7B8898]">{item.sourceLog}</p>
-                      </div>
-                      <span className="rounded-full bg-[#E9EDF3] px-2 py-1 text-[10px] font-bold text-[#1F4E79]">可回补</span>
-                    </div>
-                    <p className="mt-2 text-[11px] leading-5 text-[#5F6B7A]">{`${item.reason} · ${formatDateTime(item.updatedAt)}`}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-[#CBD7E4] bg-white/60 px-4 py-5 text-center text-xs text-[#7B8898]">
-                暂无可回补案例，先完成几条真实复核后这里会自动出现内容。
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-panel rounded-2xl border border-[#DCE4EE] p-6 shadow-[0_10px_24px_rgba(31,59,53,0.05)]">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="font-label text-[10px] uppercase tracking-widest text-[#7B8898]">最近漏报案例</p>
-              <h2 className="mt-2 text-lg font-bold text-[#1F2A37]">优先召回资产</h2>
-            </div>
-            <Link
-              href="/dashboard/knowledge"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#D6E5D3] bg-[#F4FAF3] text-[#6A8F61] transition hover:border-[#BFD7BB] hover:bg-[#EAF5E8]"
-              aria-label="进入知识库查看召回资产"
-              title="进入知识库查看召回资产"
-            >
-              <span className="material-symbols-outlined text-2xl">library_books</span>
-            </Link>
-          </div>
-          {data.recentHistoricalMissedCases.length > 0 ? (
-            <div className="space-y-3">
-              {data.recentHistoricalMissedCases.map((item) => (
-                <div key={item.id} className="rounded-xl border border-[#E8DCCB] bg-[#F4FFFB] px-4 py-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-[#1F2A37]">{item.title}</p>
-                      <p className="mt-1 text-xs text-[#7B8898]">{`${item.errorType} · ${item.sourceType}`}</p>
-                    </div>
-                    <span className={item.verified ? "rounded-full bg-[#E7F4E6] px-2 py-1 text-[10px] font-bold text-[#497447]" : "rounded-full bg-[#F3E9D7] px-2 py-1 text-[10px] font-bold text-[#8A6A24]"}>{item.verified ? "已确认" : "待确认"}</span>
-                  </div>
-                  <p className="mt-2 font-label text-[10px] uppercase tracking-widest text-[#7B8898]">{`优先级 ${item.priority} · ${formatDateTime(item.updatedAt)}`}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-[#CBD7E4] bg-[#F4FFFB] px-5 py-8 text-center">
-              <span className="material-symbols-outlined text-3xl text-[#97A4B2]">history_toggle_off</span>
-              <p className="mt-3 text-sm font-medium text-[#5F6B7A]">漏报库当前为空</p>
-              <p className="mt-1 text-xs text-[#7B8898]">先完成一批真实复核，系统才会开始沉淀首批历史漏报案例。</p>
-            </div>
-          )}
-        </div>
-      </section>
-
       <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4 lg:grid-cols-5">
         <FilterSelect label="风险等级" value={riskFilter} options={["全部级别", "高风险", "中风险", "低风险"]} onChange={(value) => { setRiskFilter(value); setCurrentPage(1); }} />
         <FilterSelect label="问题类型" value={typeFilter} options={typeOptions} onChange={(value) => { setTypeFilter(value); setCurrentPage(1); }} />
@@ -199,7 +142,14 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
             </thead>
             <tbody className="divide-y divide-[#E8DCCB]">
               {pagedRows.length > 0 ? (
-                pagedRows.map((row) => <HistoryCaseTableRow key={row.id} row={row} />)
+                pagedRows.map((row) => (
+                  <HistoryCaseTableRow
+                    key={row.id}
+                    row={row}
+                    deleting={deletingRowId === row.id}
+                    onDelete={(targetRow) => setConfirmDeleteRow(targetRow)}
+                  />
+                ))
               ) : (
                 <tr>
                   <td colSpan={7} className="px-6 py-14 text-center">
@@ -237,6 +187,49 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
         <TeaserCard icon="book" accent="text-[#3A6A9A]" title="知识沉淀分析" description={`当前已沉淀 ${data.summary.knowledgeTemplateCount} 条有效知识条目，可继续扩展到知识库与规则库。`} href="/dashboard/knowledge" cta="进入知识库" />
         <TeaserCard icon="monitoring" accent="text-[#5F6B7A]" title="趋势回溯" description={`已归档 ${data.summary.archived} 条记录，其中高风险 ${data.summary.highRisk} 条，可回到工作台继续看趋势图。`} href="/dashboard" cta="查看趋势图" />
       </section>
+
+      {confirmDeleteRow ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[#0E1B2A]/45 px-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl border border-[#DCE4EE] bg-[#FFFFFF] p-6 shadow-[0_22px_50px_rgba(15,31,52,0.28)]">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="material-symbols-outlined rounded-full bg-[#FFF2F0] p-2 text-[#B45151]">delete</span>
+              <div>
+                <h3 className="text-lg font-bold text-[#1F2A37]">确认删除复盘记录</h3>
+                <p className="mt-1 text-xs text-[#7B8898]">删除后无法恢复，请谨慎操作。</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#E8DCCB] bg-[#F8FAFD] px-4 py-3 text-sm text-[#5F6B7A]">
+              <p className="font-medium text-[#1F2A37]">{confirmDeleteRow.title}</p>
+              <p className="mt-1 text-xs">{confirmDeleteRow.sourceLog}</p>
+              <p className="mt-1 text-[11px] text-[#7B8898]">ID: {confirmDeleteRow.incidentId}</p>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteRow(null)}
+                className="rounded-lg border border-[#CBD7E4] bg-white px-4 py-2 text-sm text-[#5F6B7A] transition hover:bg-[#F3F7FC]"
+                disabled={Boolean(deletingRowId)}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteReviewCase(confirmDeleteRow.id)}
+                className="rounded-lg bg-[#B45151] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#8E3232] disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={Boolean(deletingRowId)}
+              >
+                {deletingRowId ? "删除中..." : "确认删除"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {notice ? (
+        <div className="pointer-events-none fixed bottom-5 left-1/2 z-[90] -translate-x-1/2 rounded-full border border-[#DCE4EE] bg-white/95 px-4 py-2 text-sm text-[#1F2A37] shadow-[0_10px_24px_rgba(31,59,53,0.16)]">
+          {notice}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -262,7 +255,7 @@ function FilterSelect({ label, value, options, onChange }: { label: string; valu
   );
 }
 
-function HistoryCaseTableRow({ row }: { row: HistoryCaseRow }) {
+function HistoryCaseTableRow({ row, deleting, onDelete }: { row: HistoryCaseRow; deleting: boolean; onDelete: (row: HistoryCaseRow) => void }) {
   const riskClass = row.riskLabel === "高风险" ? "bg-[#E05B4C] text-[#E05B4C]" : row.riskLabel === "中风险" ? "bg-[#D8A94A] text-[#D8A94A]" : "bg-[#6BAE7A] text-[#6BAE7A]";
   const statusClass = row.reviewStatusLabel === "已复盘" ? "border-[#1F4E79]/20 bg-[#1F4E79]/10 text-[#1F4E79]" : row.reviewStatusLabel === "已归档" ? "border-[#CBD7E4] bg-[#E9EDF3] text-[#5F6B7A]" : "border-[#E8D3A1] bg-[#FFF5DE] text-[#8A6A24]";
   return (
@@ -289,7 +282,17 @@ function HistoryCaseTableRow({ row }: { row: HistoryCaseRow }) {
       </td>
       <td className="px-6 py-5 text-right font-label text-[10px] text-[#7B8898]">{formatDateTime(row.updatedAt)}</td>
       <td className="px-6 py-5 text-center">
-        <Link href={row.logId ? `/dashboard/analyses?logId=${encodeURIComponent(row.logId)}` : "/dashboard/analyses"} className="text-xs font-medium text-[#1F4E79] transition-all hover:text-[#6D451E] hover:underline">查看复盘</Link>
+        <div className="flex items-center justify-center gap-3">
+          <Link href={`/dashboard/reviews?reviewCaseId=${encodeURIComponent(row.id)}`} className="text-xs font-medium text-[#1F4E79] transition-all hover:text-[#6D451E] hover:underline">查看复盘</Link>
+          <button
+            type="button"
+            onClick={() => onDelete(row)}
+            disabled={deleting}
+            className="text-xs font-medium text-[#B45151] transition-all hover:text-[#8E3232] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            删除
+          </button>
+        </div>
       </td>
     </tr>
   );

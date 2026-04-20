@@ -92,6 +92,12 @@ export async function submitReviewCaseAction(formData: FormData) {
     return encodedRedirect("error", returnPath, error.message);
   }
 
+  await supabase
+    .from("log_errors")
+    .update({ review_status: isSkip ? "skipped" : "completed" })
+    .eq("id", logError.id)
+    .eq("user_id", user.id);
+
   if (!isSkip) {
     await syncHistoricalMissedCase({
       supabase,

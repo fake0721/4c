@@ -1662,6 +1662,8 @@ export async function POST(request: Request) {
       updates.review_note = reviewNote || null;
     }
 
+    const targetReviewStatus = updates.review_status === "completed" ? "completed" : updates.review_status;
+
     const { error } = await supabase
       .from("review_cases")
       .update(updates)
@@ -1680,6 +1682,25 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (reviewCase?.log_error_id) {
+      await supabase
+        .from("review_cases")
+        .update({
+          review_status: targetReviewStatus,
+          updated_at: updates.updated_at,
+          ...(updates.final_error_type ? { final_error_type: updates.final_error_type } : {}),
+          ...(updates.final_risk_level ? { final_risk_level: updates.final_risk_level } : {}),
+          ...(Object.prototype.hasOwnProperty.call(updates, "review_note") ? { review_note: updates.review_note } : {}),
+        })
+        .eq("log_error_id", reviewCase.log_error_id)
+        .eq("user_id", user.id)
+        .eq("review_status", "pending");
+
+      await supabase
+        .from("log_errors")
+        .update({ review_status: targetReviewStatus })
+        .eq("id", reviewCase.log_error_id)
+        .eq("user_id", user.id);
+
       await syncHistoricalMissedCaseFromReviewCase({
         supabase,
         reviewCaseId: reviewCase.id,
@@ -2050,6 +2071,36 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ ok: true, logId });
+  }
+
+  if (body.action === "history-case-delete") {
+    const reviewCaseId = String(body.reviewCaseId ?? "").trim();
+    if (!reviewCaseId) {
+      return NextResponse.json({ error: "缺少复盘记录 ID" }, { status: 400 });
+    }
+
+    const { data: reviewCase, error: reviewCaseError } = await supabase
+      .from("review_cases")
+      .select("id, log_error_id")
+      .eq("id", reviewCaseId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (reviewCaseError || !reviewCase) {
+      return NextResponse.json({ error: reviewCaseError?.message ?? "复盘记录不存在" }, { status: 404 });
+    }
+
+    const { error: deleteReviewCaseError } = await supabase
+      .from("review_cases")
+      .delete()
+      .eq("id", reviewCaseId)
+      .eq("user_id", user.id);
+
+    if (deleteReviewCaseError) {
+      return NextResponse.json({ error: `删除复盘记录失败：${deleteReviewCaseError.message}` }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true, reviewCaseId, logErrorId: reviewCase.log_error_id });
   }
 
   return NextResponse.json({ error: "不支持的 action 参数" }, { status: 400 });

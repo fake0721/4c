@@ -1706,11 +1706,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "缺少 reviewCaseId。" }, { status: 400 });
     }
 
-    const reviewCase = await getOwnedReviewCaseForRereview({
-      supabase,
-      reviewCaseId,
-      userId: user.id,
-    }).catch(() => null);
+    let reviewCase;
+    try {
+      reviewCase = await getOwnedReviewCaseForRereview({
+        supabase,
+        reviewCaseId,
+        userId: user.id,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "复盘记录加载失败。" },
+        { status: 500 },
+      );
+    }
 
     if (!reviewCase) {
       return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
@@ -1720,14 +1728,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "仅已复盘记录支持重新复盘。" }, { status: 400 });
     }
 
-    const [historyRow, revisions] = await Promise.all([
-      getHistoryCaseRowByReviewCaseId(reviewCaseId),
-      listRecentReviewCaseRevisionSummaries({
-        supabase,
-        reviewCaseId,
-        userId: user.id,
-      }),
-    ]);
+    let historyRow;
+    let revisions;
+    try {
+      [historyRow, revisions] = await Promise.all([
+        getHistoryCaseRowByReviewCaseId(reviewCaseId),
+        listRecentReviewCaseRevisionSummaries({
+          supabase,
+          reviewCaseId,
+          userId: user.id,
+        }),
+      ]);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "复盘记录加载失败。" },
+        { status: 500 },
+      );
+    }
 
     if (!historyRow) {
       return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
@@ -1776,11 +1793,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const currentReviewCase = await getOwnedReviewCaseForRereview({
-      supabase,
-      reviewCaseId,
-      userId: user.id,
-    }).catch(() => null);
+    let currentReviewCase;
+    try {
+      currentReviewCase = await getOwnedReviewCaseForRereview({
+        supabase,
+        reviewCaseId,
+        userId: user.id,
+      });
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "复盘记录加载失败。" },
+        { status: 500 },
+      );
+    }
 
     if (!currentReviewCase) {
       return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
@@ -1828,7 +1853,7 @@ export async function POST(request: Request) {
       });
 
     if (revisionInsertError) {
-      await supabase
+      const { data: rolledBackReviewCase, error: rollbackError } = await supabase
         .from("review_cases")
         .update({
           final_error_type: beforeSnapshot.finalErrorType,
@@ -1838,7 +1863,18 @@ export async function POST(request: Request) {
         })
         .eq("id", reviewCaseId)
         .eq("user_id", user.id)
-        .eq("review_status", "completed");
+        .eq("review_status", "completed")
+        .select("id")
+        .maybeSingle();
+
+      if (rollbackError || !rolledBackReviewCase) {
+        return NextResponse.json(
+          {
+            error: `复盘修订记录写入失败，且回滚未完成，当前数据可能已部分更新：${rollbackError?.message ?? revisionInsertError.message}`,
+          },
+          { status: 500 },
+        );
+      }
 
       return NextResponse.json(
         { error: `复盘修订记录写入失败：${revisionInsertError.message}` },
@@ -1846,14 +1882,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const [historyRow, revisions] = await Promise.all([
-      getHistoryCaseRowByReviewCaseId(reviewCaseId),
-      listRecentReviewCaseRevisionSummaries({
-        supabase,
-        reviewCaseId,
-        userId: user.id,
-      }),
-    ]);
+    await syncHistoricalMissedCaseFromReviewCase({
+      supabase,
+      reviewCaseId,
+      fallbackErrorType: updatedReviewCase.final_error_type,
+    });
+
+    let historyRow;
+    let revisions;
+    try {
+      [historyRow, revisions] = await Promise.all([
+        getHistoryCaseRowByReviewCaseId(reviewCaseId),
+        listRecentReviewCaseRevisionSummaries({
+          supabase,
+          reviewCaseId,
+          userId: user.id,
+        }),
+      ]);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "复盘记录更新后读取失败。" },
+        { status: 500 },
+      );
+    }
 
     if (!historyRow) {
       return NextResponse.json({ error: "复盘记录更新后读取失败。" }, { status: 500 });
@@ -2352,7 +2403,6 @@ function inferTemplateFormatFromFileName(fileName: string) {
   if (ext === "txt" || ext === "md") return "TEXT";
   return ext ? ext.toUpperCase() : "FILE";
 }
-
 
 
 

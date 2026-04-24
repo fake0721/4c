@@ -141,6 +141,20 @@ function normalizeConfidence(value: number | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function getEffectiveIssueTypeValue(
+  reviewCase: ReviewCaseListRow,
+  error?: ErrorRow | null,
+) {
+  return String(reviewCase.final_error_type ?? error?.error_type ?? "");
+}
+
+function getEffectiveRiskValue(
+  reviewCase: ReviewCaseListRow,
+  analysis?: AnalysisRow | null,
+) {
+  return String(reviewCase.final_risk_level ?? analysis?.risk_level ?? "medium");
+}
+
 function buildHistoryCaseRow(params: {
   reviewCase: ReviewCaseListRow;
   error?: ErrorRow | null;
@@ -159,9 +173,9 @@ function buildHistoryCaseRow(params: {
     title: typeLabel,
     sourceLog: sourceLog ?? "未知日志",
     typeLabel,
-    issueTypeValue: String(reviewCase.final_error_type ?? ""),
+    issueTypeValue: getEffectiveIssueTypeValue(reviewCase, error),
     riskLabel: toRiskLabel(reviewCase.final_risk_level ?? fallbackRisk),
-    riskValue: String(reviewCase.final_risk_level ?? ""),
+    riskValue: getEffectiveRiskValue(reviewCase, analysis),
     reviewStatus: reviewCase.review_status,
     reviewStatusLabel: toReviewStatusLabel(reviewCase.review_status),
     updatedAt: asIsoDate(reviewCase.updated_at),
@@ -447,7 +461,7 @@ export async function getHistoryCaseRowByReviewCaseId(
     return null;
   }
 
-  const { data: reviewCase } = await supabase
+  const { data: reviewCase, error: reviewCaseError } = await supabase
     .from("review_cases")
     .select(
       "id, log_error_id, review_status, final_risk_level, final_error_type, review_note, updated_at",
@@ -455,6 +469,10 @@ export async function getHistoryCaseRowByReviewCaseId(
     .eq("id", trimmedReviewCaseId)
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (reviewCaseError) {
+    throw new Error(reviewCaseError.message);
+  }
 
   if (!reviewCase || reviewCase.review_status === "pending") {
     return null;
@@ -468,15 +486,23 @@ export async function getHistoryCaseRowByReviewCaseId(
           .eq("id", reviewCase.log_error_id)
           .eq("user_id", user.id)
           .maybeSingle()
-      : Promise.resolve({ data: null as ErrorRow | null }),
+      : Promise.resolve({ data: null as ErrorRow | null, error: null }),
     reviewCase.log_error_id
       ? supabase
           .from("analysis_results")
           .select("log_error_id, risk_level, confidence, cause, repair_suggestion")
           .eq("user_id", user.id)
           .eq("log_error_id", reviewCase.log_error_id)
-      : Promise.resolve({ data: [] as AnalysisRow[] }),
+      : Promise.resolve({ data: [] as AnalysisRow[], error: null }),
   ]);
+
+  if (errorResult.error) {
+    throw new Error(errorResult.error.message);
+  }
+
+  if (analysesResult.error) {
+    throw new Error(analysesResult.error.message);
+  }
 
   let selectedAnalysis: AnalysisRow | null = null;
   for (const item of analysesResult.data ?? []) {
@@ -486,7 +512,7 @@ export async function getHistoryCaseRowByReviewCaseId(
   }
 
   const error = errorResult.data;
-  const { data: log } =
+  const { data: log, error: logError } =
     error?.log_id
       ? await supabase
           .from("logs")
@@ -494,7 +520,11 @@ export async function getHistoryCaseRowByReviewCaseId(
           .eq("id", error.log_id)
           .eq("user_id", user.id)
           .maybeSingle()
-      : { data: null as { id: string; file_name: string | null } | null };
+      : { data: null as { id: string; file_name: string | null } | null, error: null };
+
+  if (logError) {
+    throw new Error(logError.message);
+  }
 
   return buildHistoryCaseRow({
     reviewCase,

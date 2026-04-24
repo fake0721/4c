@@ -7,7 +7,12 @@ import {
 } from "@/lib/analysis/missed-case-library";
 import { getSupabaseEnv, hasSupabaseEnv } from "@/lib/supabase/env";
 import { toIssueTypeDisplayName } from "@/lib/labels/issue-type";
+import { getHistoryCaseRowByReviewCaseId } from "@/lib/dashboard/history-cases";
 import { getPerformancePageData } from "@/lib/dashboard/performance";
+import {
+  buildReviewCaseSnapshot,
+  summarizeReviewCaseRevision,
+} from "@/lib/dashboard/review-case-revisions";
 import {
   normalizeErrorType,
   normalizeMatchType,
@@ -37,6 +42,14 @@ type ExportTemplate = {
   filePath?: string;
   fileSize?: number;
   downloadUrl?: string;
+};
+
+type DashboardSupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+type ReviewCaseRevisionRecord = {
+  created_at: string;
+  before_snapshot: Record<string, unknown> | null;
+  after_snapshot: Record<string, unknown> | null;
 };
 
 const DEFAULT_SYSTEM_SETTINGS: SystemSettings = {
@@ -356,6 +369,63 @@ function toKnowledgeSourceLabel(value: string | null | undefined) {
 
 function hasMeaningfulText(value: unknown) {
   return String(value ?? "").trim().length > 0;
+}
+
+function toNullableTrimmedString(value: unknown) {
+  const text = String(value ?? "").trim();
+  return text.length > 0 ? text : null;
+}
+
+function normalizeReviewNoteInput(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function listRecentReviewCaseRevisionSummaries(params: {
+  supabase: DashboardSupabaseClient;
+  reviewCaseId: string;
+  userId: string;
+  limit?: number;
+}) {
+  const { supabase, reviewCaseId, userId, limit = 5 } = params;
+  const { data, error } = await supabase
+    .from("review_case_revisions")
+    .select("created_at, before_snapshot, after_snapshot")
+    .eq("review_case_id", reviewCaseId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return ((data ?? []) as ReviewCaseRevisionRecord[]).map((item) =>
+    summarizeReviewCaseRevision(
+      buildReviewCaseSnapshot(item.before_snapshot ?? {}),
+      buildReviewCaseSnapshot(item.after_snapshot ?? {}),
+      item.created_at,
+    ),
+  );
+}
+
+async function getOwnedReviewCaseForRereview(params: {
+  supabase: DashboardSupabaseClient;
+  reviewCaseId: string;
+  userId: string;
+}) {
+  const { supabase, reviewCaseId, userId } = params;
+  const { data, error } = await supabase
+    .from("review_cases")
+    .select("id, user_id, log_error_id, review_status, final_error_type, final_risk_level, review_note, updated_at")
+    .eq("id", reviewCaseId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
 
 function parseSourceTypes(value: unknown) {
@@ -1630,6 +1700,172 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (body.action === "history-case-rereview-load") {
+    const reviewCaseId = String(body.reviewCaseId ?? "").trim();
+    if (!reviewCaseId) {
+      return NextResponse.json({ error: "缺少 reviewCaseId。" }, { status: 400 });
+    }
+
+    const reviewCase = await getOwnedReviewCaseForRereview({
+      supabase,
+      reviewCaseId,
+      userId: user.id,
+    }).catch(() => null);
+
+    if (!reviewCase) {
+      return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
+    }
+
+    if (reviewCase.review_status !== "completed") {
+      return NextResponse.json({ error: "仅已复盘记录支持重新复盘。" }, { status: 400 });
+    }
+
+    const [historyRow, revisions] = await Promise.all([
+      getHistoryCaseRowByReviewCaseId(reviewCaseId),
+      listRecentReviewCaseRevisionSummaries({
+        supabase,
+        reviewCaseId,
+        userId: user.id,
+      }),
+    ]);
+
+    if (!historyRow) {
+      return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      reviewCase: {
+        id: historyRow.id,
+        incidentId: historyRow.incidentId,
+        title: historyRow.title,
+        sourceLog: historyRow.sourceLog,
+        updatedAt: historyRow.updatedAt,
+        reviewStatus: historyRow.reviewStatus,
+        reviewStatusLabel: historyRow.reviewStatusLabel,
+        snippet: historyRow.snippet,
+        logId: historyRow.logId,
+      },
+      form: {
+        finalErrorType: historyRow.issueTypeValue,
+        finalRiskLevel: historyRow.riskValue,
+        reviewNote: historyRow.reviewNote,
+      },
+      revisions,
+    });
+  }
+
+  if (body.action === "history-case-rereview") {
+    const reviewCaseId = String(body.reviewCaseId ?? "").trim();
+    if (!reviewCaseId) {
+      return NextResponse.json({ error: "缺少 reviewCaseId。" }, { status: 400 });
+    }
+
+    const finalErrorType = toNullableTrimmedString(body.finalErrorType);
+    const finalRiskLevel = String(body.finalRiskLevel ?? "").trim().toLowerCase();
+    const reviewNote = normalizeReviewNoteInput(body.reviewNote);
+    const normalizedRiskLevel =
+      finalRiskLevel === "high" || finalRiskLevel === "medium" || finalRiskLevel === "low"
+        ? finalRiskLevel
+        : null;
+
+    if (!normalizedRiskLevel) {
+      return NextResponse.json(
+        { error: "finalRiskLevel 必须是 high、medium 或 low。" },
+        { status: 400 },
+      );
+    }
+
+    const currentReviewCase = await getOwnedReviewCaseForRereview({
+      supabase,
+      reviewCaseId,
+      userId: user.id,
+    }).catch(() => null);
+
+    if (!currentReviewCase) {
+      return NextResponse.json({ error: "复盘记录不存在或无权访问。" }, { status: 404 });
+    }
+
+    if (currentReviewCase.review_status !== "completed") {
+      return NextResponse.json({ error: "仅已复盘记录支持重新复盘。" }, { status: 400 });
+    }
+
+    const beforeSnapshot = buildReviewCaseSnapshot(currentReviewCase);
+    const updatedAt = new Date().toISOString();
+    const updatePayload = {
+      final_error_type: finalErrorType,
+      final_risk_level: normalizedRiskLevel,
+      review_note: reviewNote || null,
+      updated_at: updatedAt,
+    };
+
+    const { data: updatedReviewCase, error: updateError } = await supabase
+      .from("review_cases")
+      .update(updatePayload)
+      .eq("id", reviewCaseId)
+      .eq("user_id", user.id)
+      .eq("review_status", "completed")
+      .select("id, user_id, log_error_id, review_status, final_error_type, final_risk_level, review_note, updated_at")
+      .maybeSingle();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 400 });
+    }
+
+    if (!updatedReviewCase) {
+      return NextResponse.json({ error: "复盘记录更新失败，请刷新后重试。" }, { status: 400 });
+    }
+
+    const afterSnapshot = buildReviewCaseSnapshot(updatedReviewCase);
+    const { error: revisionInsertError } = await supabase
+      .from("review_case_revisions")
+      .insert({
+        review_case_id: reviewCaseId,
+        user_id: user.id,
+        before_snapshot: beforeSnapshot,
+        after_snapshot: afterSnapshot,
+      });
+
+    if (revisionInsertError) {
+      await supabase
+        .from("review_cases")
+        .update({
+          final_error_type: beforeSnapshot.finalErrorType,
+          final_risk_level: beforeSnapshot.finalRiskLevel,
+          review_note: beforeSnapshot.reviewNote,
+          updated_at: currentReviewCase.updated_at,
+        })
+        .eq("id", reviewCaseId)
+        .eq("user_id", user.id)
+        .eq("review_status", "completed");
+
+      return NextResponse.json(
+        { error: `复盘修订记录写入失败：${revisionInsertError.message}` },
+        { status: 400 },
+      );
+    }
+
+    const [historyRow, revisions] = await Promise.all([
+      getHistoryCaseRowByReviewCaseId(reviewCaseId),
+      listRecentReviewCaseRevisionSummaries({
+        supabase,
+        reviewCaseId,
+        userId: user.id,
+      }),
+    ]);
+
+    if (!historyRow) {
+      return NextResponse.json({ error: "复盘记录更新后读取失败。" }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      row: historyRow,
+      revisions,
+      message: "重新复盘已保存。",
+    });
+  }
+
   if (body.action === "complete-review") {
     const reviewCaseId = String(body.reviewCaseId ?? "").trim();
     if (!reviewCaseId) {
@@ -2115,11 +2351,6 @@ function inferTemplateFormatFromFileName(fileName: string) {
   if (ext === "txt" || ext === "md") return "TEXT";
   return ext ? ext.toUpperCase() : "FILE";
 }
-
-
-
-
-
 
 
 

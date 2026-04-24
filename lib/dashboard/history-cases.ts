@@ -8,7 +8,9 @@ export type HistoryCaseRow = {
   title: string;
   sourceLog: string;
   typeLabel: string;
+  issueTypeValue: string;
   riskLabel: string;
+  riskValue: string;
   reviewStatus: string;
   reviewStatusLabel: string;
   updatedAt: string;
@@ -16,6 +18,7 @@ export type HistoryCaseRow = {
   confidence: number;
   cause: string;
   suggestion: string;
+  reviewNote: string;
   logId: string;
 };
 
@@ -57,6 +60,31 @@ export type HistoryCasesPageData = {
   historicalMissedOps: HistoricalMissedOpsSummary;
   recentHistoricalMissedCases: HistoricalMissedRecentRow[];
   recentBackfillCases: HistoricalMissedBackfillRow[];
+};
+
+type ReviewCaseListRow = {
+  id: string;
+  log_error_id: string;
+  review_status: string;
+  final_risk_level: string | null;
+  final_error_type: string | null;
+  review_note: string | null;
+  updated_at: string | null;
+};
+
+type ErrorRow = {
+  id: string;
+  log_id: string | null;
+  error_type: string | null;
+  raw_text: string | null;
+};
+
+type AnalysisRow = {
+  log_error_id: string;
+  risk_level: string | null;
+  confidence: number | null;
+  cause: string | null;
+  repair_suggestion: string | null;
 };
 
 const EMPTY_DATA: HistoryCasesPageData = {
@@ -101,11 +129,53 @@ function toReviewStatusLabel(value: string | null | undefined) {
   if (value === "completed") return "已复盘";
   if (value === "skipped") return "已跳过";
   if (value === "archived") return "已归档";
-  return "待沉淀";
+  return "待复核";
 }
 
 function asIsoDate(value: string | null | undefined) {
   return value ?? new Date(0).toISOString();
+}
+
+function normalizeConfidence(value: number | null | undefined) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function buildHistoryCaseRow(params: {
+  reviewCase: ReviewCaseListRow;
+  error?: ErrorRow | null;
+  analysis?: AnalysisRow | null;
+  sourceLog?: string | null;
+}): HistoryCaseRow {
+  const { reviewCase, error, analysis, sourceLog } = params;
+  const fallbackRisk = analysis?.risk_level ?? "medium";
+  const typeLabel = toIssueDisplayName(
+    reviewCase.final_error_type ?? error?.error_type ?? "未知问题",
+  );
+
+  return {
+    id: reviewCase.id,
+    incidentId: reviewCase.log_error_id,
+    title: typeLabel,
+    sourceLog: sourceLog ?? "未知日志",
+    typeLabel,
+    issueTypeValue: String(reviewCase.final_error_type ?? ""),
+    riskLabel: toRiskLabel(reviewCase.final_risk_level ?? fallbackRisk),
+    riskValue: String(reviewCase.final_risk_level ?? ""),
+    reviewStatus: reviewCase.review_status,
+    reviewStatusLabel: toReviewStatusLabel(reviewCase.review_status),
+    updatedAt: asIsoDate(reviewCase.updated_at),
+    snippet: error?.raw_text ?? "",
+    confidence: normalizeConfidence(analysis?.confidence),
+    cause:
+      analysis?.cause ??
+      "暂无分析结论，建议结合原始日志与上下游调用链进行人工确认。",
+    suggestion:
+      analysis?.repair_suggestion ??
+      "建议先执行保守处置策略，再补充规则并跟踪后续趋势。",
+    reviewNote: String(reviewCase.review_note ?? ""),
+    logId: error?.log_id ?? "",
+  };
 }
 
 export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
@@ -133,11 +203,16 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
   ] = await Promise.all([
     supabase
       .from("review_cases")
-      .select("id, log_error_id, review_status, final_risk_level, final_error_type, updated_at")
+      .select(
+        "id, log_error_id, review_status, final_risk_level, final_error_type, review_note, updated_at",
+      )
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false })
       .limit(300),
-    supabase.from("knowledge_base").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase
+      .from("knowledge_base")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
     supabase
       .from("review_cases")
       .select("id", { count: "exact", head: true })
@@ -167,7 +242,9 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
       .eq("verified", true),
   ]);
 
-  const reviewRows = (reviewRowsResult.data ?? []).filter((item) => item.review_status !== "pending");
+  const reviewRows = ((reviewRowsResult.data ?? []) as ReviewCaseListRow[]).filter(
+    (item) => item.review_status !== "pending",
+  );
   const reviewErrorIds = Array.from(
     new Set(
       reviewRows
@@ -178,11 +255,19 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
 
   const [errorsResult, analysesResult] = await Promise.all([
     reviewErrorIds.length > 0
-      ? supabase.from("log_errors").select("id, log_id, error_type, raw_text").eq("user_id", user.id).in("id", reviewErrorIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; log_id: string | null; error_type: string | null; raw_text: string | null }> }),
+      ? supabase
+          .from("log_errors")
+          .select("id, log_id, error_type, raw_text")
+          .eq("user_id", user.id)
+          .in("id", reviewErrorIds)
+      : Promise.resolve({ data: [] as ErrorRow[] }),
     reviewErrorIds.length > 0
-      ? supabase.from("analysis_results").select("log_error_id, risk_level, confidence, cause, repair_suggestion").eq("user_id", user.id).in("log_error_id", reviewErrorIds)
-      : Promise.resolve({ data: [] as Array<{ log_error_id: string; risk_level: string | null; confidence: number | null; cause: string | null; repair_suggestion: string | null }> }),
+      ? supabase
+          .from("analysis_results")
+          .select("log_error_id, risk_level, confidence, cause, repair_suggestion")
+          .eq("user_id", user.id)
+          .in("log_error_id", reviewErrorIds)
+      : Promise.resolve({ data: [] as AnalysisRow[] }),
   ]);
 
   const relatedLogIds = Array.from(
@@ -193,11 +278,16 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
     ),
   );
 
-  const logsResult = relatedLogIds.length > 0
-    ? await supabase.from("logs").select("id, file_name").eq("user_id", user.id).in("id", relatedLogIds)
-    : { data: [] as Array<{ id: string; file_name: string | null }> };
+  const logsResult =
+    relatedLogIds.length > 0
+      ? await supabase
+          .from("logs")
+          .select("id, file_name")
+          .eq("user_id", user.id)
+          .in("id", relatedLogIds)
+      : { data: [] as Array<{ id: string; file_name: string | null }> };
 
-  const errorById = new Map<string, { log_id: string | null; error_type: string | null; raw_text: string | null }>();
+  const errorById = new Map<string, ErrorRow>();
   for (const item of errorsResult.data ?? []) {
     errorById.set(item.id, item);
   }
@@ -207,7 +297,7 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
     logById.set(item.id, item.file_name ?? "未知日志");
   }
 
-  const analysisByErrorId = new Map<string, { risk_level: string | null; confidence: number | null; cause: string | null; repair_suggestion: string | null }>();
+  const analysisByErrorId = new Map<string, AnalysisRow>();
   for (const item of analysesResult.data ?? []) {
     const current = analysisByErrorId.get(item.log_error_id);
     if (!current || toRiskWeight(item.risk_level) >= toRiskWeight(current.risk_level)) {
@@ -233,9 +323,19 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
           .in("log_error_id", completedReviewErrorIds)
           .order("created_at", { ascending: false })
           .limit(500)
-      : { data: [] as Array<{ log_error_id: string; cause: string | null; repair_suggestion: string | null; created_at: string | null }> };
+      : {
+          data: [] as Array<{
+            log_error_id: string;
+            cause: string | null;
+            repair_suggestion: string | null;
+            created_at: string | null;
+          }>,
+        };
 
-  const latestCompletedAnalysisByErrorId = new Map<string, { cause: string | null; repair_suggestion: string | null; created_at: string | null }>();
+  const latestCompletedAnalysisByErrorId = new Map<
+    string,
+    { cause: string | null; repair_suggestion: string | null; created_at: string | null }
+  >();
   for (const item of completedAnalysisRowsResult.data ?? []) {
     if (!latestCompletedAnalysisByErrorId.has(item.log_error_id)) {
       latestCompletedAnalysisByErrorId.set(item.log_error_id, item);
@@ -243,7 +343,9 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
   }
 
   const backfillEligibleReviews = completedReviewRows.reduce((total, item) => {
-    const analysis = item.log_error_id ? latestCompletedAnalysisByErrorId.get(item.log_error_id) : null;
+    const analysis = item.log_error_id
+      ? latestCompletedAnalysisByErrorId.get(item.log_error_id)
+      : null;
     const eligible =
       String(item.final_cause ?? "").trim().length > 0 ||
       String(item.resolution ?? "").trim().length > 0 ||
@@ -254,34 +356,20 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
     return total + (eligible ? 1 : 0);
   }, 0);
 
-  const rows: HistoryCaseRow[] = reviewRows.map((item) => {
-    const error = errorById.get(item.log_error_id);
-    const analysis = analysisByErrorId.get(item.log_error_id);
-    const logId = error?.log_id ?? "";
-    const fallbackRisk = analysis?.risk_level ?? "medium";
-    const typeLabel = toIssueDisplayName(item.final_error_type ?? error?.error_type ?? "未知问题");
-
-    return {
-      id: item.id,
-      incidentId: item.log_error_id,
-      title: typeLabel,
-      sourceLog: logById.get(logId) ?? "未知日志",
-      typeLabel,
-      riskLabel: toRiskLabel(item.final_risk_level ?? fallbackRisk),
-      reviewStatus: item.review_status,
-      reviewStatusLabel: toReviewStatusLabel(item.review_status),
-      updatedAt: asIsoDate(item.updated_at),
-      snippet: error?.raw_text ?? "",
-      confidence: Number(analysis?.confidence ?? 0),
-      cause: analysis?.cause ?? "暂无分析结论，建议结合原始日志与上下游调用链进行人工确认。",
-      suggestion: analysis?.repair_suggestion ?? "建议先执行保守处置策略，再补充规则并跟踪后续趋势。",
-      logId,
-    };
-  });
+  const rows: HistoryCaseRow[] = reviewRows.map((item) =>
+    buildHistoryCaseRow({
+      reviewCase: item,
+      error: errorById.get(item.log_error_id),
+      analysis: analysisByErrorId.get(item.log_error_id),
+      sourceLog: logById.get(errorById.get(item.log_error_id)?.log_id ?? ""),
+    }),
+  );
 
   const recentBackfillCases = completedReviewRows
     .map((item) => {
-      const analysis = item.log_error_id ? latestCompletedAnalysisByErrorId.get(item.log_error_id) : null;
+      const analysis = item.log_error_id
+        ? latestCompletedAnalysisByErrorId.get(item.log_error_id)
+        : null;
       const error = item.log_error_id ? errorById.get(item.log_error_id) : null;
       const eligibleReasons = [
         String(item.final_cause ?? "").trim(),
@@ -311,7 +399,10 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
     summary: {
       total: rows.length,
       reviewed: rows.filter((item) => item.reviewStatusLabel === "已复盘").length,
-      archived: rows.filter((item) => item.reviewStatusLabel === "已归档" || item.reviewStatusLabel === "已跳过").length,
+      archived: rows.filter(
+        (item) =>
+          item.reviewStatusLabel === "已归档" || item.reviewStatusLabel === "已跳过",
+      ).length,
       highRisk: rows.filter((item) => item.riskLabel === "高风险").length,
       knowledgeTemplateCount: knowledgeCountResult.count ?? 0,
     },
@@ -333,4 +424,82 @@ export async function getHistoryCasesPageData(): Promise<HistoryCasesPageData> {
     })),
     recentBackfillCases,
   };
+}
+
+export async function getHistoryCaseRowByReviewCaseId(
+  reviewCaseId: string,
+): Promise<HistoryCaseRow | null> {
+  if (!hasSupabaseEnv()) {
+    return null;
+  }
+
+  const trimmedReviewCaseId = reviewCaseId.trim();
+  if (!trimmedReviewCaseId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data: reviewCase } = await supabase
+    .from("review_cases")
+    .select(
+      "id, log_error_id, review_status, final_risk_level, final_error_type, review_note, updated_at",
+    )
+    .eq("id", trimmedReviewCaseId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!reviewCase || reviewCase.review_status === "pending") {
+    return null;
+  }
+
+  const [errorResult, analysesResult] = await Promise.all([
+    reviewCase.log_error_id
+      ? supabase
+          .from("log_errors")
+          .select("id, log_id, error_type, raw_text")
+          .eq("id", reviewCase.log_error_id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      : Promise.resolve({ data: null as ErrorRow | null }),
+    reviewCase.log_error_id
+      ? supabase
+          .from("analysis_results")
+          .select("log_error_id, risk_level, confidence, cause, repair_suggestion")
+          .eq("user_id", user.id)
+          .eq("log_error_id", reviewCase.log_error_id)
+      : Promise.resolve({ data: [] as AnalysisRow[] }),
+  ]);
+
+  let selectedAnalysis: AnalysisRow | null = null;
+  for (const item of analysesResult.data ?? []) {
+    if (!selectedAnalysis || toRiskWeight(item.risk_level) >= toRiskWeight(selectedAnalysis.risk_level)) {
+      selectedAnalysis = item;
+    }
+  }
+
+  const error = errorResult.data;
+  const { data: log } =
+    error?.log_id
+      ? await supabase
+          .from("logs")
+          .select("id, file_name")
+          .eq("id", error.log_id)
+          .eq("user_id", user.id)
+          .maybeSingle()
+      : { data: null as { id: string; file_name: string | null } | null };
+
+  return buildHistoryCaseRow({
+    reviewCase,
+    error,
+    analysis: selectedAnalysis,
+    sourceLog: log?.file_name,
+  });
 }

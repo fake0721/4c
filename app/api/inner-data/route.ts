@@ -1761,7 +1761,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "缺少 reviewCaseId。" }, { status: 400 });
     }
 
-    const finalErrorType = toNullableTrimmedString(body.finalErrorType);
+    const requestedFinalErrorType = toNullableTrimmedString(body.finalErrorType);
     const finalRiskLevel = String(body.finalRiskLevel ?? "").trim().toLowerCase();
     const reviewNote = normalizeReviewNoteInput(body.reviewNote);
     const normalizedRiskLevel =
@@ -1791,6 +1791,7 @@ export async function POST(request: Request) {
     }
 
     const beforeSnapshot = buildReviewCaseSnapshot(currentReviewCase);
+    const finalErrorType = requestedFinalErrorType ?? currentReviewCase.final_error_type;
     const updatedAt = new Date().toISOString();
     const updatePayload = {
       final_error_type: finalErrorType,
@@ -2351,7 +2352,6 @@ function inferTemplateFormatFromFileName(fileName: string) {
   if (ext === "txt" || ext === "md") return "TEXT";
   return ext ? ext.toUpperCase() : "FILE";
 }
-
 
 
 

@@ -2,18 +2,52 @@
 
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
+import {
+  HistoryCaseRereviewModal,
+  type HistoryCaseRereviewCaseMeta,
+  type HistoryCaseRereviewDraft,
+} from "@/components/dashboard/pages/history-cases/history-case-rereview-modal";
 import type { HistoryCaseRow, HistoryCasesPageData } from "@/lib/dashboard/history-cases";
+import type { ReviewCaseRevisionSummary } from "@/lib/dashboard/review-case-revisions";
 
 type HistoryCasesPageProps = {
   data: HistoryCasesPageData;
 };
 
 const PAGE_SIZE = 12;
+const DEFAULT_REREVIEW_DRAFT: HistoryCaseRereviewDraft = {
+  finalErrorType: "",
+  finalRiskLevel: "medium",
+  reviewNote: "",
+};
+
+type RereviewLoadResponse = {
+  ok?: boolean;
+  error?: string;
+  reviewCase?: HistoryCaseRereviewCaseMeta;
+  form?: Partial<HistoryCaseRereviewDraft>;
+  revisions?: ReviewCaseRevisionSummary[];
+};
+
+type RereviewSaveResponse = {
+  ok?: boolean;
+  error?: string;
+  row?: HistoryCaseRow;
+  revisions?: ReviewCaseRevisionSummary[];
+  message?: string;
+};
 
 export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
   const [rows, setRows] = useState(data.rows);
   const [deletingRowId, setDeletingRowId] = useState<string | null>(null);
   const [confirmDeleteRow, setConfirmDeleteRow] = useState<HistoryCaseRow | null>(null);
+  const [rereviewRow, setRereviewRow] = useState<HistoryCaseRow | null>(null);
+  const [rereviewCase, setRereviewCase] = useState<HistoryCaseRereviewCaseMeta | null>(null);
+  const [rereviewDraft, setRereviewDraft] = useState<HistoryCaseRereviewDraft>(DEFAULT_REREVIEW_DRAFT);
+  const [rereviewRevisions, setRereviewRevisions] = useState<ReviewCaseRevisionSummary[]>([]);
+  const [rereviewLoading, setRereviewLoading] = useState(false);
+  const [rereviewSaving, setRereviewSaving] = useState(false);
+  const [rereviewError, setRereviewError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [riskFilter, setRiskFilter] = useState("全部级别");
   const [typeFilter, setTypeFilter] = useState("全部类型");
@@ -70,6 +104,122 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
     } finally {
       setDeletingRowId(null);
       setConfirmDeleteRow(null);
+    }
+  }
+
+  async function handleOpenRereview(row: HistoryCaseRow) {
+    if (row.reviewStatus !== "completed") {
+      return;
+    }
+
+    setRereviewRow(row);
+    setRereviewCase({
+      id: row.id,
+      incidentId: row.incidentId,
+      title: row.title,
+      sourceLog: row.sourceLog,
+      updatedAt: row.updatedAt,
+    });
+    setRereviewDraft({
+      finalErrorType: row.issueTypeValue,
+      finalRiskLevel: row.riskValue || "medium",
+      reviewNote: row.reviewNote,
+    });
+    setRereviewRevisions([]);
+    setRereviewError(null);
+    setRereviewLoading(true);
+
+    try {
+      const response = await fetch("/api/inner-data", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "history-case-rereview-load",
+          reviewCaseId: row.id,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as RereviewLoadResponse | null;
+      if (!response.ok || !payload?.reviewCase) {
+        throw new Error(payload?.error || "重新复盘数据加载失败，请稍后重试。");
+      }
+
+      setRereviewCase(payload.reviewCase);
+      setRereviewDraft({
+        finalErrorType: String(payload.form?.finalErrorType ?? row.issueTypeValue ?? ""),
+        finalRiskLevel: String(payload.form?.finalRiskLevel ?? row.riskValue ?? "medium") || "medium",
+        reviewNote: String(payload.form?.reviewNote ?? row.reviewNote ?? ""),
+      });
+      setRereviewRevisions(payload.revisions ?? []);
+    } catch (error) {
+      setRereviewError(error instanceof Error ? error.message : "重新复盘数据加载失败，请稍后重试。");
+    } finally {
+      setRereviewLoading(false);
+    }
+  }
+
+  function handleCloseRereview() {
+    if (rereviewSaving) {
+      return;
+    }
+
+    setRereviewRow(null);
+    setRereviewCase(null);
+    setRereviewDraft(DEFAULT_REREVIEW_DRAFT);
+    setRereviewRevisions([]);
+    setRereviewError(null);
+    setRereviewLoading(false);
+  }
+
+  async function handleSaveRereview() {
+    if (!rereviewRow || rereviewSaving) {
+      return;
+    }
+
+    setRereviewSaving(true);
+    setRereviewError(null);
+
+    try {
+      const response = await fetch("/api/inner-data", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "history-case-rereview",
+          reviewCaseId: rereviewRow.id,
+          finalErrorType: rereviewDraft.finalErrorType,
+          finalRiskLevel: rereviewDraft.finalRiskLevel,
+          reviewNote: rereviewDraft.reviewNote,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as RereviewSaveResponse | null;
+      if (!response.ok || !payload?.row) {
+        throw new Error(payload?.error || "重新复盘保存失败，请稍后重试。");
+      }
+
+      setRows((current) => current.map((item) => (item.id === payload.row?.id ? payload.row : item)));
+      setRereviewRow(payload.row);
+      setRereviewCase({
+        id: payload.row.id,
+        incidentId: payload.row.incidentId,
+        title: payload.row.title,
+        sourceLog: payload.row.sourceLog,
+        updatedAt: payload.row.updatedAt,
+      });
+      setRereviewDraft({
+        finalErrorType: payload.row.issueTypeValue,
+        finalRiskLevel: payload.row.riskValue || "medium",
+        reviewNote: payload.row.reviewNote,
+      });
+      setRereviewRevisions(payload.revisions ?? []);
+      setNotice(payload.message || "重新复盘已保存。");
+      window.setTimeout(() => setNotice(null), 1800);
+    } catch (error) {
+      setRereviewError(error instanceof Error ? error.message : "重新复盘保存失败，请稍后重试。");
+    } finally {
+      setRereviewSaving(false);
     }
   }
 
@@ -148,6 +298,7 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
                     row={row}
                     deleting={deletingRowId === row.id}
                     onDelete={(targetRow) => setConfirmDeleteRow(targetRow)}
+                    onRereview={handleOpenRereview}
                   />
                 ))
               ) : (
@@ -225,6 +376,19 @@ export function HistoryCasesPage({ data }: HistoryCasesPageProps) {
         </div>
       ) : null}
 
+      <HistoryCaseRereviewModal
+        open={Boolean(rereviewRow)}
+        caseMeta={rereviewCase}
+        draft={rereviewDraft}
+        revisions={rereviewRevisions}
+        loading={rereviewLoading}
+        saving={rereviewSaving}
+        error={rereviewError}
+        onChange={(patch) => setRereviewDraft((current) => ({ ...current, ...patch }))}
+        onClose={handleCloseRereview}
+        onSave={handleSaveRereview}
+      />
+
       {notice ? (
         <div className="pointer-events-none fixed bottom-5 left-1/2 z-[90] -translate-x-1/2 rounded-full border border-[#DCE4EE] bg-white/95 px-4 py-2 text-sm text-[#1F2A37] shadow-[0_10px_24px_rgba(31,59,53,0.16)]">
           {notice}
@@ -255,7 +419,17 @@ function FilterSelect({ label, value, options, onChange }: { label: string; valu
   );
 }
 
-function HistoryCaseTableRow({ row, deleting, onDelete }: { row: HistoryCaseRow; deleting: boolean; onDelete: (row: HistoryCaseRow) => void }) {
+function HistoryCaseTableRow({
+  row,
+  deleting,
+  onDelete,
+  onRereview,
+}: {
+  row: HistoryCaseRow;
+  deleting: boolean;
+  onDelete: (row: HistoryCaseRow) => void;
+  onRereview: (row: HistoryCaseRow) => void;
+}) {
   const riskClass = row.riskLabel === "高风险" ? "bg-[#E05B4C] text-[#E05B4C]" : row.riskLabel === "中风险" ? "bg-[#D8A94A] text-[#D8A94A]" : "bg-[#6BAE7A] text-[#6BAE7A]";
   const statusClass = row.reviewStatusLabel === "已复盘" ? "border-[#1F4E79]/20 bg-[#1F4E79]/10 text-[#1F4E79]" : row.reviewStatusLabel === "已归档" ? "border-[#CBD7E4] bg-[#E9EDF3] text-[#5F6B7A]" : "border-[#E8D3A1] bg-[#FFF5DE] text-[#8A6A24]";
   return (
@@ -284,6 +458,15 @@ function HistoryCaseTableRow({ row, deleting, onDelete }: { row: HistoryCaseRow;
       <td className="px-6 py-5 text-center">
         <div className="flex items-center justify-center gap-3">
           <Link href={`/dashboard/reviews?reviewCaseId=${encodeURIComponent(row.id)}`} className="text-xs font-medium text-[#1F4E79] transition-all hover:text-[#6D451E] hover:underline">查看复盘</Link>
+          {row.reviewStatus === "completed" ? (
+            <button
+              type="button"
+              onClick={() => onRereview(row)}
+              className="text-xs font-medium text-[#1F4E79] transition-all hover:text-[#6D451E] hover:underline"
+            >
+              重新复盘
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => onDelete(row)}
@@ -319,7 +502,3 @@ function formatDateTime(value: string) {
   if (!Number.isFinite(date.getTime())) return "-";
   return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
-
-
-
-

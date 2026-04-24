@@ -45,6 +45,14 @@ function normalizeIsoTimestamp(value: unknown) {
   return Number.isNaN(date.getTime()) ? text : date.toISOString();
 }
 
+function toIsoTimestampOrText(value: unknown) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
+  return normalizeIsoTimestamp(value);
+}
+
 function formatValue(value: string | null) {
   return value ?? "unset";
 }
@@ -72,7 +80,7 @@ export function summarizeReviewCaseRevision(
   createdAt: string | Date,
 ): ReviewCaseRevisionSummary {
   const normalizedCreatedAt =
-    createdAt instanceof Date ? createdAt.toISOString() : normalizeIsoTimestamp(createdAt) ?? String(createdAt);
+    toIsoTimestampOrText(createdAt) ?? String(createdAt);
   const noteChanged = beforeSnapshot.reviewNote !== afterSnapshot.reviewNote;
 
   return {

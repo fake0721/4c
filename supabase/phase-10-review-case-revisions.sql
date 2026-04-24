@@ -25,4 +25,12 @@ create policy "review_case_revisions_insert_own"
 on public.review_case_revisions
 for insert
 to authenticated
-with check (auth.uid() = user_id);
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.review_cases
+    where public.review_cases.id = review_case_revisions.review_case_id
+      and public.review_cases.user_id = auth.uid()
+  )
+);

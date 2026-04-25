@@ -2,12 +2,14 @@ import type { DetectedIncident } from "@/lib/rules/types";
 import type { RagContextItem } from "@/lib/analysis/types";
 
 export type LlmProviderId = "openai-compatible" | "mock";
+export type LlmPromptMode = "rule_only" | "model_only" | "hybrid";
 
 export type LlmAnalysisRequest = {
   sourceType: string;
   logContent: string;
   incident: DetectedIncident;
   ragContext: RagContextItem[];
+  analysisMode?: LlmPromptMode;
 };
 
 export type LlmAnalysisResponse = {

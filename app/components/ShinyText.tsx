@@ -95,11 +95,12 @@ export default function ShinyText({
       style={{
         backgroundImage: `linear-gradient(
           120deg,
-          #1F2A37 0%,
-          #1F2A37 35%,
-          #FFFFFF 50%,
-          #1F2A37 65%,
-          #1F2A37 100%
+          #1D2129 0%,
+          #1D2129 34%,
+          #69B1FF 49%,
+          #FF7D00 54%,
+          #1D2129 68%,
+          #1D2129 100%
         )`,
         backgroundSize: '200% auto',
         backgroundPosition: '150% center',

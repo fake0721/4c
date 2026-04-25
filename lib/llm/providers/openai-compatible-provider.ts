@@ -17,7 +17,7 @@ const CONTEXT_LINES_BEFORE = 4;
 const CONTEXT_LINES_AFTER = 6;
 const MAX_EXCERPT_LENGTH = 2500;
 
-const OPS_LOG_ANALYST_SYSTEM_PROMPT = [
+const STRICT_HYBRID_SYSTEM_PROMPT = [
   "你是专业的智能日志分析专家，负责分析服务器/应用日志中的异常问题，严格按以下规则工作，不允许违反任何一条：",
   "1. 分析依据：仅基于提供的日志内容和知识库案例，绝对不编造任何信息。证据不足时必须明确标注“根因暂无法确定，建议人工复核”。",
   "2. 优先匹配知识库中已有的异常类型与风险等级定义；若无匹配案例，选择最接近的异常类型，并在根因中说明依据。",
@@ -28,6 +28,15 @@ const OPS_LOG_ANALYST_SYSTEM_PROMPT = [
   "7. 输出键必须严格为：问题类型、风险等级、核心关键词、根因分析、解决方案、可信度。",
   "8. 风险等级只能是：高、中、低。可信度只能是：高、中、低、未知。",
   "9. 根因分析不超过200字；解决方案不超过3点。",
+].join(" ");
+
+const OPEN_MODEL_ONLY_SYSTEM_PROMPT = [
+  "你是专业的智能日志分析专家。当前处于纯模型分析模式。",
+  "你可以使用你已有的通用技术知识与可用的外部检索能力（如果模型端提供）进行判断，不受召回知识条目限制。",
+  "允许在证据不足时给出‘最可能原因 + 不确定性说明 + 验证步骤’，但不得编造不存在的事实。",
+  "输出必须是合法 JSON 对象，不要输出 Markdown，不要输出解释文本。",
+  "风险等级只能是 low|medium|high。",
+  "confidence 必须是 0~1 的数字。",
 ].join(" ");
 
 export function createOpenAiCompatibleProvider(): LlmProvider {
@@ -41,14 +50,32 @@ export function createOpenAiCompatibleProvider(): LlmProvider {
     id: "openai-compatible",
     model: config.model,
     async analyzeIncident(input) {
-      const candidateModels = [config.model, config.fallbackModel].filter(
-        (item, index, list) => Boolean(item) && list.indexOf(item) === index,
+      const candidateRequests = [
+        { model: config.model, apiKey: config.apiKey },
+        {
+          model: config.fallbackModel || config.model,
+          apiKey: config.fallbackApiKey || config.apiKey,
+        },
+      ].filter(
+        (item, index, list) =>
+          Boolean(item.model) &&
+          Boolean(item.apiKey) &&
+          list.findIndex(
+            (candidate) =>
+              candidate.model === item.model && candidate.apiKey === item.apiKey,
+          ) === index,
       );
       let lastError: Error | null = null;
 
-      for (const model of candidateModels) {
+      for (const candidate of candidateRequests) {
         try {
-          return await requestCompletion(model, input, config.baseUrl, config.apiKey, config.timeoutMs);
+          return await requestCompletion(
+            candidate.model,
+            input,
+            config.baseUrl,
+            candidate.apiKey,
+            config.timeoutMs,
+          );
         } catch (error) {
           lastError = error instanceof Error ? error : new Error("Unknown LLM request error.");
         }
@@ -85,7 +112,7 @@ async function requestCompletion(
         messages: [
           {
             role: "system",
-            content: OPS_LOG_ANALYST_SYSTEM_PROMPT,
+            content: resolveSystemPrompt(input),
           },
           {
             role: "user",
@@ -120,6 +147,12 @@ async function requestCompletion(
   }
 }
 
+function resolveSystemPrompt(input: Parameters<LlmProvider["analyzeIncident"]>[0]) {
+  return input.analysisMode === "model_only"
+    ? OPEN_MODEL_ONLY_SYSTEM_PROMPT
+    : STRICT_HYBRID_SYSTEM_PROMPT;
+}
+
 function normalizeContent(
   content: string | Array<{ type?: string; text?: string }> | undefined,
 ) {
@@ -138,6 +171,14 @@ function normalizeContent(
 }
 
 function buildPrompt(input: Parameters<LlmProvider["analyzeIncident"]>[0]) {
+  if (input.analysisMode === "model_only") {
+    return buildModelOnlyPrompt(input);
+  }
+
+  return buildStrictPrompt(input);
+}
+
+function buildStrictPrompt(input: Parameters<LlmProvider["analyzeIncident"]>[0]) {
   const ragContextText =
     input.ragContext.length === 0
       ? "未召回到可用知识。"
@@ -169,6 +210,29 @@ function buildPrompt(input: Parameters<LlmProvider["analyzeIncident"]>[0]) {
     "4. repairSuggestion 优先给排查动作，例如检查端口、依赖可达性、线程池、连接池、异常栈、邻近日志上下文。",
     "5. 不要把当前异常附近上下文以外的其他报错混进结论。",
     "6. 如果召回知识为空或相关性弱，请保持保守。",
+    "",
+    "只返回以下 JSON 结构:",
+    '{ "cause": string, "riskLevel": "low" | "medium" | "high", "confidence": number, "repairSuggestion": string }',
+  ].join("\n");
+}
+
+function buildModelOnlyPrompt(input: Parameters<LlmProvider["analyzeIncident"]>[0]) {
+  const excerpt = extractIncidentExcerpt(input.logContent, input.incident.lineNumber);
+
+  return [
+    `日志来源类型: ${input.sourceType}`,
+    `异常类型: ${input.incident.errorType}`,
+    `异常行号: ${input.incident.lineNumber}`,
+    `异常原文: ${input.incident.rawText}`,
+    "",
+    "当前异常附近上下文:",
+    excerpt,
+    "",
+    "纯模型分析要求:",
+    "1. 可结合通用运维知识与模型可用外部检索能力进行推断，不受召回知识限制。",
+    "2. 输出聚焦最可能根因，明确给出可执行排查步骤。",
+    "3. 若证据不足，必须在 cause 中明确标注不确定性，并在 repairSuggestion 中给出验证路径。",
+    "4. 只返回 JSON，不要返回 Markdown，不要返回解释文本。",
     "",
     "只返回以下 JSON 结构:",
     '{ "cause": string, "riskLevel": "low" | "medium" | "high", "confidence": number, "repairSuggestion": string }',

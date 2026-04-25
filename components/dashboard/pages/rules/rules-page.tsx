@@ -693,7 +693,7 @@ function RuleTableRow({
         </div>
       </td>
       <td className="px-6 py-5 align-top">
-        <span className="inline-flex rounded-full border border-[#CBD7E4] bg-[#FFFFFF] px-3 py-1 text-xs text-[#5F6B7A]">{toTypeLabel(row.matchType)}</span>
+        <span className="inline-flex whitespace-nowrap rounded-full border border-[#CBD7E4] bg-[#FFFFFF] px-3 py-1 text-xs text-[#5F6B7A]">{toTypeLabel(row.matchType)}</span>
       </td>
       <td className="px-6 py-5 align-top">
         <div className="max-w-md text-sm leading-relaxed text-[#5F6B7A]">{row.summary}</div>
@@ -711,9 +711,9 @@ function RuleTableRow({
       </td>
       <td className="px-6 py-5 align-top text-sm text-[#5F6B7A]">{formatDate(row.updatedAt)}</td>
       <td className="px-6 py-5 align-top">
-        <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold">
+        <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold">
           <span className={`h-2 w-2 rounded-full ${row.enabled ? "bg-[#3B925F]" : "bg-[#97A4B2]"}`}></span>
-          <span className={row.enabled ? "text-[#3B925F]" : "text-[#7B8898]"}>{row.enabled ? "启用中" : "已停用"}</span>
+          <span className={row.enabled ? "whitespace-nowrap text-[#3B925F]" : "whitespace-nowrap text-[#7B8898]"}>{row.enabled ? "启用中" : "已停用"}</span>
         </div>
       </td>
       <td className="px-8 py-5 align-top">

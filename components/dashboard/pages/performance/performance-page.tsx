@@ -13,11 +13,6 @@ export function PerformancePage({ initialData }: PerformancePageProps) {
   const [busy, setBusy] = useState(false);
   const [activeRange, setActiveRange] = useState(initialData.range.isCustom ? "custom" : String(initialData.days));
   const hasAnalysisRecords = data.dataSource.kind !== "empty" && data.modes.length > 0;
-  const sourceBadgeClass = data.dataSource.kind === "real"
-    ? "border border-[#3A6A9A]/20 bg-[#3A6A9A]/10 text-[#3A6A9A]"
-    : data.dataSource.kind === "demo"
-      ? "border border-[#A06A2F]/20 bg-[#F7F1E4] text-[#A06A2F]"
-      : "border border-[#9A7A2D]/20 bg-[#F7F1E4] text-[#9A7A2D]";
 
   async function loadRange(days: 7 | 30, startDate?: string, endDate?: string) {
     setBusy(true);
@@ -27,7 +22,11 @@ export function PerformancePage({ initialData }: PerformancePageProps) {
         params.set("startDate", startDate);
         params.set("endDate", endDate);
       }
-      const response = await fetch(`/api/inner-data?${params.toString()}`, { credentials: "include" });
+      const response = await fetch(`/api/inner-data?${params.toString()}`, {
+        credentials: "include",
+        cache: "no-store",
+        headers: { "cache-control": "no-cache" },
+      });
       const payload = (await response.json().catch(() => null)) as PerformancePageData | { error?: string } | null;
       if (!response.ok || !payload || !("metrics" in payload)) {
         throw new Error((payload && "error" in payload && payload.error) || "性能分析数据加载失败。");
@@ -110,12 +109,6 @@ export function PerformancePage({ initialData }: PerformancePageProps) {
         </div>
       </section>
 
-      <div className={`mb-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-[10px] font-label uppercase tracking-widest ${sourceBadgeClass}`}>
-        <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: '"FILL" 1' }}>visibility</span>
-        <span>{`${data.dataSource.label} · ${data.range.startDate} ~ ${data.range.endDate}`}</span>
-      </div>
-      <p className="mb-8 text-xs leading-6 text-[#7B8898]">{data.dataSource.description}</p>
-
       {hasAnalysisRecords ? (
         <>
       <section className="mb-8 rounded-2xl border border-[#1F4E79]/15 bg-gradient-to-r from-[#1F4E79]/10 to-transparent p-6">
@@ -128,7 +121,9 @@ export function PerformancePage({ initialData }: PerformancePageProps) {
           <div className="w-full max-w-md rounded-2xl border border-[#DCE4EE] bg-white/35 p-4 text-sm text-[#5F6B7A]">
             <p className="font-label text-[10px] uppercase tracking-widest text-[#7B8898]">当前待复核</p>
             <p className="mt-2 font-headline text-3xl font-black text-[#1F4E79]">{data.pendingReviewCount}</p>
-            <p className="mt-2 text-xs leading-6">{data.recommendation.footnote}</p>
+            {data.recommendation.footnote ? (
+              <p className="mt-2 text-xs leading-6">{data.recommendation.footnote}</p>
+            ) : null}
           </div>
         </div>
         <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -155,9 +150,9 @@ export function PerformancePage({ initialData }: PerformancePageProps) {
               <p className="mt-2 text-xs leading-6 text-[#7B8898]">从准确率、召回率、吞吐量和资源消耗四个口径看当前模式的窗口表现。</p>
             </div>
             <div className="flex flex-wrap gap-3 text-[10px] uppercase tracking-widest text-[#7B8898]">
-              {data.availableModes.includes("rule_only") ? <Legend color="bg-[#7BCBFF]" label="规则" /> : null}
-              {data.availableModes.includes("model_only") ? <Legend color="bg-[#C8A884]" label="模型" /> : null}
-              {data.availableModes.includes("hybrid") ? <Legend color="bg-[#99652E]" label="混合" /> : null}
+              {data.availableModes.includes("rule_only") ? <Legend color="bg-[#5B9DFF]" label="规则" /> : null}
+              {data.availableModes.includes("model_only") ? <Legend color="bg-[#9A6B3F]" label="模型" /> : null}
+              {data.availableModes.includes("hybrid") ? <Legend color="bg-[#7B5CFA]" label="混合" /> : null}
             </div>
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -244,9 +239,9 @@ function Legend({ color, label }: { color: string; label: string }) {
 
 function ChartGroup({ item, availableModes }: { item: PerformanceChartRow; availableModes: PerformancePageData["availableModes"] }) {
   const allBars = [
-    { mode: "rule_only", label: "规则", value: item.ruleOnly, color: "bg-[#7BCBFF]/65 border-[#7BCBFF]" },
-    { mode: "model_only", label: "模型", value: item.modelOnly, color: "bg-[#C8A884]/80 border-[#C8A884]" },
-    { mode: "hybrid", label: "混合", value: item.hybrid, color: "bg-[#99652E]/90 border-[#99652E]" },
+    { mode: "rule_only", label: "规则", value: item.ruleOnly, color: "bg-[#5B9DFF]/70 border-[#5B9DFF]" },
+    { mode: "model_only", label: "模型", value: item.modelOnly, color: "bg-[#9A6B3F]/82 border-[#9A6B3F]" },
+    { mode: "hybrid", label: "混合", value: item.hybrid, color: "bg-[#7B5CFA]/85 border-[#7B5CFA]" },
   ];
   const bars = allBars.filter((bar) => availableModes.includes(bar.mode as PerformancePageData["availableModes"][number]));
   const compareLabel = `${Math.max(1, bars.length)}模式对比`;
@@ -261,7 +256,7 @@ function MiniStat({ label, value, delta }: { label: string; value: string; delta
 }
 
 function ModeRow({ item }: { item: PerformanceModeRow }) {
-  const badgeClass = item.status === "recommended" ? "border border-[#1F4E79]/20 bg-[#1F4E79]/10 text-[#1F4E79]" : item.status === "high_load" ? "border border-[#C58B52]/20 bg-[#C58B52]/10 text-[#A06A2F]" : "border border-[#7BCBFF]/40 bg-[#7BCBFF]/15 text-[#2D6DAD]";
+  const badgeClass = item.status === "recommended" ? "border border-[#7B5CFA]/25 bg-[#7B5CFA]/12 text-[#5A3ED8]" : item.status === "high_load" ? "border border-[#9A6B3F]/25 bg-[#9A6B3F]/12 text-[#7A522C]" : "border border-[#5B9DFF]/40 bg-[#5B9DFF]/15 text-[#2D6DAD]";
   return <tr className="transition-colors hover:bg-[#F4FFFB]"><td className="px-8 py-5 text-sm font-bold text-[#1F2A37]">{item.modeLabel}</td><td className="px-6 py-5 text-right font-label text-[#5F6B7A]">{item.accuracy.toFixed(2)}%</td><td className="px-6 py-5 text-right font-label text-[#5F6B7A]">{item.recall.toFixed(2)}%</td><td className="px-6 py-5 text-right font-label text-[#5F6B7A]">{item.f1.toFixed(3)}</td><td className="px-6 py-5 text-right font-label text-[#5F6B7A]">{item.latencyMs.toFixed(1)}ms</td><td className="px-8 py-5 text-center"><span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-widest ${badgeClass}`}>{item.status === "recommended" ? "推荐运行" : item.status === "high_load" ? "高负载" : "基线模式"}</span></td></tr>;
 }
 
@@ -273,5 +268,3 @@ function formatDelta(value: number, unit: string) {
 function escapeHtml(value: string) {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
 }
-
-

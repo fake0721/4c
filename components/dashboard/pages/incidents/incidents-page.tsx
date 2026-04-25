@@ -264,16 +264,18 @@ function IncidentTableRow({ row }: { row: IncidentRow }) {
       </td>
       <td className="px-6 py-5 text-sm text-[#5F6B7A]">{row.sourceLog}</td>
       <td className="px-6 py-5">
-        <span className="rounded bg-[#DCE4EE] px-2 py-1 text-[11px] text-[#5F6B7A]">{row.type}</span>
+        <span className="inline-flex whitespace-nowrap rounded bg-[#DCE4EE] px-2 py-1 text-[11px] text-[#5F6B7A]">
+          {row.type}
+        </span>
       </td>
       <td className="px-6 py-5 text-center">
         <span
           className={
             highRisk
-              ? "inline-flex items-center gap-1.5 rounded-full bg-[#FF8C00]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#FF8C00] ring-1 ring-[#FF8C00]/50"
+              ? "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#FF8C00]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#FF8C00] ring-1 ring-[#FF8C00]/50"
               : mediumRisk
-                ? "inline-flex items-center gap-1.5 rounded-full bg-[#FFD700]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#A27C00] ring-1 ring-[#FFD700]/50"
-                : "inline-flex items-center gap-1.5 rounded-full bg-[#E3F0FF] px-3 py-1 text-[10px] font-bold uppercase text-[#2D6DAD] ring-1 ring-[#9CC2E8]"
+                ? "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#FFD700]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#A27C00] ring-1 ring-[#FFD700]/50"
+                : "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#E3F0FF] px-3 py-1 text-[10px] font-bold uppercase text-[#2D6DAD] ring-1 ring-[#9CC2E8]"
           }
         >
           <span className="h-1.5 w-1.5 rounded-full bg-current" />
@@ -284,10 +286,10 @@ function IncidentTableRow({ row }: { row: IncidentRow }) {
         <span
           className={
             done
-              ? "inline-flex items-center rounded-full bg-[#E8F4EC] px-3 py-1 text-[10px] font-bold text-[#2F6A42] ring-1 ring-[#BFDDC9]"
+              ? "inline-flex items-center whitespace-nowrap rounded-full bg-[#E8F4EC] px-3 py-1 text-[10px] font-bold text-[#2F6A42] ring-1 ring-[#BFDDC9]"
               : skipped
-                ? "inline-flex items-center rounded-full bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold text-[#7B8898] ring-1 ring-[#CBD7E4]"
-                : "inline-flex items-center rounded-full bg-[#FFF5DE] px-3 py-1 text-[10px] font-bold text-[#8A6A24] ring-1 ring-[#E8D3A1]"
+                ? "inline-flex items-center whitespace-nowrap rounded-full bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold text-[#7B8898] ring-1 ring-[#CBD7E4]"
+                : "inline-flex items-center whitespace-nowrap rounded-full bg-[#FFF5DE] px-3 py-1 text-[10px] font-bold text-[#8A6A24] ring-1 ring-[#E8D3A1]"
           }
         >
           {row.stageLabel}
@@ -298,7 +300,7 @@ function IncidentTableRow({ row }: { row: IncidentRow }) {
         <div className="flex justify-end gap-2">
           <Link
             href="/dashboard/reviews"
-            className="rounded bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold uppercase text-[#5F6B7A] transition-all hover:bg-[#DCE4EE]"
+            className="inline-flex min-w-[4.5rem] items-center justify-center whitespace-nowrap rounded bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold uppercase text-[#5F6B7A] transition-all hover:bg-[#DCE4EE]"
           >
             详情
           </Link>
@@ -306,8 +308,8 @@ function IncidentTableRow({ row }: { row: IncidentRow }) {
             href="/dashboard/reviews"
             className={
               done
-                ? "pointer-events-none cursor-not-allowed rounded bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold uppercase text-[#97A4B2]"
-                : "rounded bg-[#1F4E79]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#1F4E79] transition-all hover:bg-[#1F4E79]/35"
+                ? "pointer-events-none inline-flex min-w-[4.5rem] cursor-not-allowed items-center justify-center whitespace-nowrap rounded bg-[#E9EDF3] px-3 py-1 text-[10px] font-bold uppercase text-[#97A4B2]"
+                : "inline-flex min-w-[4.5rem] items-center justify-center whitespace-nowrap rounded bg-[#1F4E79]/20 px-3 py-1 text-[10px] font-bold uppercase text-[#1F4E79] transition-all hover:bg-[#1F4E79]/35"
             }
           >
             {done ? "已处理" : "立即处理"}

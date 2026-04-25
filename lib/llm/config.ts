@@ -11,6 +11,7 @@ export function getLlmConfig() {
         : null,
     baseUrl: process.env.LLM_BASE_URL?.trim() || "",
     apiKey: process.env.LLM_API_KEY?.trim() || "",
+    fallbackApiKey: process.env.LLM_FALLBACK_API_KEY?.trim() || "",
     model: process.env.LLM_MODEL?.trim() || "",
     fallbackModel: process.env.LLM_FALLBACK_MODEL?.trim() || "",
     timeoutMs: Number.isFinite(timeoutValue) && timeoutValue > 0 ? timeoutValue : 20000,

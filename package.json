@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node ./scripts/run-next-ipv4first.mjs dev --webpack",
+    "build": "node ./scripts/run-next-ipv4first.mjs build",
+    "start": "node ./scripts/run-next-ipv4first.mjs start",
     "lint": "eslint",
     "backfill:analysis-latency": "node ./scripts/backfill-analysis-latency.mjs",
     "backfill:analysis-latency:dry": "node ./scripts/backfill-analysis-latency.mjs --dry-run"

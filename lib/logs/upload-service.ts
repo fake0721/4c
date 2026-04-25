@@ -66,6 +66,29 @@ function sanitizeFileName(fileName: string) {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "-").replace(/-+/g, "-");
 }
 
+function resolveUploadContentType(file: File) {
+  const type = String(file.type ?? "").trim().toLowerCase();
+  const extension = (file.name.match(/\.([a-z0-9]+)$/i)?.[1] ?? "").toLowerCase();
+
+  if (type && type !== "application/octet-stream") {
+    return type;
+  }
+
+  if (extension === "json") {
+    return "application/json";
+  }
+
+  if (extension === "csv") {
+    return "text/csv";
+  }
+
+  if (extension === "log" || extension === "txt" || extension === "out") {
+    return "text/plain";
+  }
+
+  return "text/plain";
+}
+
 function createStoragePath(userId: string, fileName: string) {
   const date = new Date();
   const year = date.getUTCFullYear();
@@ -146,11 +169,13 @@ export async function uploadAndAnalyzeLog({
 
   const lineCount = countLines(fileText);
   const storagePath = createStoragePath(user.id, file.name);
+  const resolvedContentType = resolveUploadContentType(file);
+  const uploadBody = new Blob([fileText], { type: resolvedContentType });
 
   const { error: uploadError } = await supabase.storage
     .from(logBucket)
-    .upload(storagePath, file, {
-      contentType: file.type || "text/plain",
+    .upload(storagePath, uploadBody, {
+      contentType: resolvedContentType,
       upsert: false,
     });
 
@@ -203,7 +228,7 @@ export async function uploadAndAnalyzeLog({
     .insert({
       user_id: user.id,
       file_name: file.name,
-      file_type: file.type || "text/plain",
+      file_type: resolvedContentType,
       source_type: sourceType,
       storage_path: storagePath,
       file_size: file.size,

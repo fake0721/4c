@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { supabaseServerFetch } from "@/lib/supabase/server-fetch";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -21,6 +22,9 @@ export async function createClient() {
           // Server Actions may mutate them. Middleware handles session refresh.
         }
       },
+    },
+    global: {
+      fetch: supabaseServerFetch,
     },
   });
 }

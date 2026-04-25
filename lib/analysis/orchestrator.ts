@@ -145,6 +145,7 @@ export async function analyzeIncidents(
         logContent: input.logContent,
         incident: input.incident,
         ragContext,
+        analysisMode: input.analysisMode,
       });
 
       return buildModelResult({
@@ -184,6 +185,7 @@ export function buildRepresentativeAnalysisPlan(
     incident: params.incidents[group.representativeIndex],
     sourceType: params.sourceType,
     logContent: params.logContent,
+    analysisMode: params.analysisMode,
   }));
 
   const llmIndexes: number[] = [];

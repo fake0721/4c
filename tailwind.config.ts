@@ -8,13 +8,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: "#1F4E79",
-        secondary: "#3A6A9A",
-        accent: "#5B8FB9",
-        background: "#F3F5F8",
+        primary: "#165DFF",
+        secondary: "#69B1FF",
+        accent: "#FF7D00",
+        background: "#F5F7FA",
         surface: "#FFFFFF",
-        text: "#1F2A37",
-        "text-secondary": "#5F6B7A",
+        text: "#1D2129",
+        "text-secondary": "#4E5969",
       },
       fontFamily: {
         headline: "var(--font-manrope)",

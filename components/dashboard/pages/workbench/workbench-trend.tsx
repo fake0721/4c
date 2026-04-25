@@ -51,36 +51,36 @@ export function WorkbenchTrend({ trend }: WorkbenchTrendProps) {
         <h4 className="font-headline text-lg font-bold">近 7 天问题趋势折线图</h4>
         <div className="flex space-x-4">
           <div className="flex items-center space-x-2">
-            <span className="h-3 w-3 rounded-full bg-[#1F4E79]"></span>
+            <span className="h-3 w-3 rounded-full bg-[#165DFF]"></span>
             <span className="font-label text-xs uppercase text-[#5F6B7A]">总计</span>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="h-3 w-3 rounded-full bg-[#E53935]"></span>
+            <span className="h-3 w-3 rounded-full bg-[#FF7D00]"></span>
             <span className="font-label text-xs uppercase text-[#5F6B7A]">高风险</span>
           </div>
         </div>
       </div>
       <div className="relative mt-auto flex flex-grow items-end space-x-4">
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-60">
-          <svg className="h-full w-full drop-shadow-[0_0_6px_rgba(31,78,121,0.18)]" viewBox="0 0 800 200">
+          <svg className="h-full w-full drop-shadow-[0_0_6px_rgba(22,93,255,0.2)]" viewBox="0 0 800 200">
             <defs>
               <linearGradient id="totalAreaGradientReact" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1F4E79" stopOpacity="0.18"></stop>
-                <stop offset="100%" stopColor="#1F4E79" stopOpacity="0"></stop>
+                <stop offset="0%" stopColor="#165DFF" stopOpacity="0.2"></stop>
+                <stop offset="100%" stopColor="#165DFF" stopOpacity="0"></stop>
               </linearGradient>
             </defs>
             <path d={chartPaths.totalArea} fill="url(#totalAreaGradientReact)"></path>
-            <path d={chartPaths.totalLine} fill="none" stroke="#1F4E79" strokeWidth="3"></path>
+            <path d={chartPaths.totalLine} fill="none" stroke="#165DFF" strokeWidth="3"></path>
           </svg>
-          <svg className="absolute inset-0 h-full w-full drop-shadow-[0_0_5px_rgba(229,57,53,0.2)]" viewBox="0 0 800 200">
+          <svg className="absolute inset-0 h-full w-full drop-shadow-[0_0_5px_rgba(255,125,0,0.2)]" viewBox="0 0 800 200">
             <defs>
               <linearGradient id="riskAreaGradientReact" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E53935" stopOpacity="0.16"></stop>
-                <stop offset="100%" stopColor="#E53935" stopOpacity="0"></stop>
+                <stop offset="0%" stopColor="#FF7D00" stopOpacity="0.16"></stop>
+                <stop offset="100%" stopColor="#FF7D00" stopOpacity="0"></stop>
               </linearGradient>
             </defs>
             <path d={chartPaths.highArea} fill="url(#riskAreaGradientReact)"></path>
-            <path d={chartPaths.highLine} fill="none" stroke="#E53935" strokeWidth="2.5"></path>
+            <path d={chartPaths.highLine} fill="none" stroke="#FF7D00" strokeWidth="2.5"></path>
           </svg>
         </div>
         <div className="absolute inset-0 z-10 grid grid-cols-7">
@@ -99,8 +99,8 @@ export function WorkbenchTrend({ trend }: WorkbenchTrendProps) {
         </div>
         {hoveredPoint ? (
           <>
-            <div className="pointer-events-none absolute bottom-6 top-0 z-20 w-px bg-[#BCA890]/60" style={{ left: guideLeft }}></div>
-            <div className="pointer-events-none absolute top-2 z-30 rounded-lg border border-[#CBD7E4] bg-[#FFFFFF]/95 px-3 py-2 text-xs shadow-[0_8px_20px_rgba(31,59,53,0.12)]" style={{ left: tooltipLeft }}>
+            <div className="pointer-events-none absolute bottom-6 top-0 z-20 w-px bg-[#69B1FF]/70" style={{ left: guideLeft }}></div>
+            <div className="pointer-events-none absolute top-2 z-30 rounded-lg border border-[#CFE0FF] bg-[#FFFFFF]/95 px-3 py-2 text-xs shadow-[0_8px_20px_rgba(22,93,255,0.12)]" style={{ left: tooltipLeft }}>
               <p className="font-bold">{hoveredPoint.day}</p>
               <p>总计: {hoveredPoint.total}</p>
               <p>高风险: {hoveredPoint.high}</p>

@@ -11,7 +11,7 @@ export default function Home() {
     <div
       className="relative min-h-screen w-full"
       style={{
-        backgroundColor: '#F3F5F8',
+        backgroundColor: '#F5F7FA',
       }}
     >
       <AuroraBackground />
@@ -31,17 +31,17 @@ export default function Home() {
           </ShinyText>
         </h1>
 
-        <p className="max-w-2xl mx-auto text-lg md:text-xl text-[#5F6B7A] font-body mb-10 leading-relaxed">
+        <p className="max-w-2xl mx-auto text-lg md:text-xl text-[#4E5969] font-body mb-10 leading-relaxed">
           从海量日志中挖掘价值，在复杂系统里精准排障。
           <br />
           实时监控、智能分析、可视化决策，让运维更简单，让系统更可靠。
         </p>
 
         <div className="mt-12 flex justify-center">
-          <div className="p-[1px] rounded-full bg-gradient-to-r from-white/20 to-transparent">
+          <div className="p-[1px] rounded-full bg-gradient-to-r from-[#165DFF]/72 via-[#69B1FF]/52 to-[#FF7D00]/44">
             <Link
               href="/dashboard"
-              className="bg-white hover:bg-white/90 text-black px-10 py-4 rounded-full font-headline font-bold text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_20px_50px_rgba(255,255,255,0.1)] flex items-center gap-2"
+              className="bg-[#165DFF] hover:bg-[#0E42D2] text-white px-10 py-4 rounded-full font-headline font-bold text-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-[0_16px_36px_rgba(22,93,255,0.28)] flex items-center gap-2"
             >
               开始你的日志分析
               <span className="material-symbols-outlined text-xl">trending_flat</span>

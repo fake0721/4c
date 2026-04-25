@@ -10,41 +10,41 @@ export function WorkbenchMetrics({ metrics }: WorkbenchMetricsProps) {
       key: "totalLogs",
       label: "日志总数",
       icon: "data_exploration",
-      iconClass: "bg-[#1F4E79]/10 text-[#1F4E79]",
+      iconClass: "bg-[#E8F3FF] text-[#165DFF]",
       hint: "已同步日志总量",
       hintIcon: "trending_up",
-      valueClass: "text-[#1F2A37]",
+      valueClass: "text-[#1D2129]",
       panelClass: "glass-panel obsidian-glow group hover:bg-white/10",
     },
     {
       key: "totalIssues",
       label: "问题总数",
       icon: "rule",
-      iconClass: "bg-[#3A6A9A]/10 text-[#3A6A9A]",
+      iconClass: "bg-[#EEF4FF] text-[#3B82F6]",
       hint: "已同步问题总量",
       hintIcon: "trending_down",
-      valueClass: "text-[#1F2A37]",
-      panelClass: "glass-panel group hover:bg-white/10",
+      valueClass: "text-[#1D2129]",
+      panelClass: "group border border-[#D8E7FF] bg-[#F8FBFF] hover:bg-[#F2F8FF] shadow-[0_8px_20px_-10px_rgba(59,130,246,0.26)]",
     },
     {
       key: "highRisk",
       label: "高风险问题",
       icon: "warning",
-      iconClass: "bg-[#E9BE98] text-[#8A4D24]",
+      iconClass: "bg-[#FFF1E8] text-[#FF7D00]",
       hint: "已同步高风险统计",
       hintIcon: "warning",
-      valueClass: "text-[#7A3518]",
-      panelClass: "group border border-[#D8B08C] bg-[#FCEBDD] hover:bg-[#F8E1CF] shadow-[0_8px_24px_-8px_rgba(181,119,67,0.35)]",
+      valueClass: "text-[#CC5F00]",
+      panelClass: "group border border-[#FFD1A8] bg-[#FFF6EE] hover:bg-[#FFF1E4] shadow-[0_8px_24px_-8px_rgba(255,125,0,0.28)]",
     },
     {
       key: "pendingReviews",
       label: "待复核问题",
       icon: "pending_actions",
-      iconClass: "bg-yellow-400/10 text-yellow-500",
+      iconClass: "bg-[#F3EEFF] text-[#7A45FF]",
       hint: metrics.pendingReviews > 0 ? `待人工复核 ${metrics.pendingReviews} 项` : "当前无待复核问题",
       hintIcon: "pending_actions",
-      valueClass: "text-[#1F2A37]",
-      panelClass: "glass-panel group hover:bg-white/10",
+      valueClass: "text-[#1D2129]",
+      panelClass: "group border border-[#E4DBFF] bg-[#FAF8FF] hover:bg-[#F5F1FF] shadow-[0_8px_20px_-10px_rgba(122,69,255,0.24)]",
     },
   ] as const;
 
@@ -63,14 +63,14 @@ export function WorkbenchMetrics({ metrics }: WorkbenchMetricsProps) {
                   {card.icon}
                 </span>
               </div>
-              <span className={`font-label text-xs uppercase tracking-widest ${card.key === "highRisk" ? "text-[#8A4D24]/80" : "text-[#5F6B7A]"}`}>
+              <span className={`font-label text-xs uppercase tracking-widest ${card.key === "highRisk" ? "text-[#CC5F00]/80" : card.key === "totalIssues" ? "text-[#3B82F6]/90" : card.key === "pendingReviews" ? "text-[#7A45FF]/90" : "text-[#4E5969]"}`}>
                 {card.label}
               </span>
             </div>
             <h3 className={`mb-1 font-headline text-3xl font-extrabold ${card.valueClass}`}>
               {value.toLocaleString("zh-CN")}
             </h3>
-            <p className={`flex items-center text-xs font-medium ${card.key === "highRisk" ? "text-[#8A4D24]" : card.key === "pendingReviews" ? "text-yellow-600" : card.key === "totalIssues" ? "text-[#3A6A9A]" : "text-[#1F4E79]"}`}>
+            <p className={`flex items-center text-xs font-medium ${card.key === "highRisk" ? "text-[#FF7D00]" : card.key === "pendingReviews" ? "text-[#7A45FF]" : card.key === "totalIssues" ? "text-[#3B82F6]" : "text-[#165DFF]"}`}>
               <span className="material-symbols-outlined mr-1 text-xs">{card.hintIcon}</span>
               {card.hint}
             </p>

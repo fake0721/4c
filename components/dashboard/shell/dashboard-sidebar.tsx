@@ -17,9 +17,9 @@ export function DashboardSidebar() {
   const primaryActionLabel = pathname === "/upload" ? "进入分析记录" : "开始新分析";
 
   return (
-    <aside className="absolute left-0 top-0 z-[60] hidden h-full w-64 flex-col border-r border-white/5 bg-[#3A6A9A] shadow-[4px_0_24px_rgba(0,0,0,0.24)] md:flex">
+    <aside className="absolute left-0 top-0 z-[60] hidden h-full w-64 flex-col border-r border-[#D7E2F0] bg-[#F7FAFF] shadow-[4px_0_20px_rgba(29,33,41,0.08)] md:flex">
       <div className="px-6 py-8">
-        <h1 className="font-headline text-xl font-black tracking-tight text-white">运维智析平台</h1>
+        <h1 className="font-headline text-xl font-black tracking-tight text-[#1D2129]">运维智析平台</h1>
       </div>
       <nav className="mt-4 flex flex-col space-y-2 px-4">
         {navItems.map((item) => {
@@ -38,8 +38,8 @@ export function DashboardSidebar() {
               href={item.href}
               className={
                 active
-                  ? "flex items-center space-x-3 rounded-xl border-r-4 border-[#2F5F8E] bg-[#FFFFFF] px-4 py-3 text-[#1F2A37] backdrop-blur-md transition-all duration-300"
-                  : "flex items-center space-x-3 rounded-xl px-4 py-3 text-[#1F2A37] transition-all duration-200 hover:bg-[#FFFFFF]/70 hover:text-[#1F2A37]"
+                  ? "flex items-center space-x-3 rounded-xl border-l-4 border-[#165DFF] bg-[#EAF2FF] px-4 py-3 text-[#165DFF] backdrop-blur-md transition-all duration-300"
+                  : "flex items-center space-x-3 rounded-xl px-4 py-3 text-[#1D2129] transition-all duration-200 hover:bg-[#EEF4FF] hover:text-[#165DFF]"
               }
             >
               <span
@@ -56,7 +56,7 @@ export function DashboardSidebar() {
       <div className="mt-auto px-6 py-8">
         <Link
           href={primaryActionHref}
-          className="block w-full rounded-xl bg-[#FFFFFF] py-3 text-center text-sm font-bold text-[#1F2A37] shadow-lg transition-transform hover:bg-[#E9EDF3] active:scale-95"
+          className="block w-full rounded-xl bg-[#165DFF] py-3 text-center text-sm font-bold text-white shadow-[0_10px_20px_rgba(22,93,255,0.2)] transition-transform hover:bg-[#0E42D2] active:scale-95"
         >
           {primaryActionLabel}
         </Link>
@@ -65,8 +65,8 @@ export function DashboardSidebar() {
             href="/dashboard/help"
             className={
               pathname === "/dashboard/help"
-                ? "flex items-center space-x-2 rounded-lg border border-[#DCE4EE] bg-[#FFFFFF] px-3 py-2 text-xs font-label uppercase text-[#1F2A37]"
-                : "flex items-center space-x-2 px-3 py-2 text-xs font-label uppercase text-[#1F2A37] transition-colors hover:text-[#1F2A37]"
+                ? "flex items-center space-x-2 rounded-lg border border-[#D7E2F0] bg-[#FFFFFF] px-3 py-2 text-xs font-label uppercase text-[#1D2129]"
+                : "flex items-center space-x-2 px-3 py-2 text-xs font-label uppercase text-[#4E5969] transition-colors hover:text-[#165DFF]"
             }
           >
             <span className="material-symbols-outlined text-sm">help</span>
@@ -76,8 +76,8 @@ export function DashboardSidebar() {
             href="/dashboard/docs"
             className={
               pathname === "/dashboard/docs"
-                ? "flex items-center space-x-2 rounded-lg border border-[#DCE4EE] bg-[#FFFFFF] px-3 py-2 text-xs font-label uppercase text-[#1F2A37]"
-                : "flex items-center space-x-2 px-3 py-2 text-xs font-label uppercase text-[#1F2A37] transition-colors hover:text-[#1F2A37]"
+                ? "flex items-center space-x-2 rounded-lg border border-[#D7E2F0] bg-[#FFFFFF] px-3 py-2 text-xs font-label uppercase text-[#1D2129]"
+                : "flex items-center space-x-2 px-3 py-2 text-xs font-label uppercase text-[#4E5969] transition-colors hover:text-[#165DFF]"
             }
           >
             <span className="material-symbols-outlined text-sm">description</span>

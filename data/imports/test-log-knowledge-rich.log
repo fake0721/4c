@@ -1,0 +1,61 @@
+2026-04-22 09:12:01.104 [gateway] INFO request_id=gw-9a31 route=/api/orders source=nginx method=GET client=10.10.2.45 begin request
+2026-04-22 09:12:03.228 [gateway] ERROR request_id=gw-9a31 upstream timed out (110: Connection timed out) while reading response header from upstream, client: 10.10.2.45, server: api.demo.local, request: "GET /api/orders HTTP/1.1", upstream: "http://10.0.3.21:8080/api/orders", host: "api.demo.local"
+2026-04-22 09:12:03.229 [gateway] WARN request_id=gw-9a31 gateway timeout status=504 cost_ms=2121 retry=0
+2026-04-22 09:12:09.771 [gateway] ERROR request_id=gw-9a3f connect() failed (111: Connection refused) while connecting to upstream, upstream: "http://10.0.3.22:8080", host: "api.demo.local"
+2026-04-22 09:12:09.772 [gateway] ERROR request_id=gw-9a3f 502 bad gateway for route=/api/payments target=payments-service
+2026-04-22 09:12:15.130 [gateway] ERROR request_id=gw-9a44 no live upstreams while connecting to upstream, service=inventory status=503 service unavailable
+2026-04-22 09:12:15.131 [gateway] WARN request_id=gw-9a44 breaker=open reason=upstream-all-unhealthy
+
+2026-04-22 09:13:01.483 [order-service] INFO trace_id=tr-881a start checkout user_id=u-20017 source=application
+2026-04-22 09:13:02.005 [order-service] ERROR trace_id=tr-881a java.net.ConnectException: Connection refused: connect downstream=payment-core host=10.0.8.17 port=9090
+2026-04-22 09:13:02.006 [order-service] WARN trace_id=tr-881a fallback=degrade-payments reason=downstream service unavailable
+2026-04-22 09:13:05.971 [order-service] ERROR trace_id=tr-881b Read timed out executing POST http://inventory-core/api/lock sku=SKU-998
+2026-04-22 09:13:05.972 [order-service] ERROR trace_id=tr-881b socket timeout after 3000ms stage=reserve-inventory
+2026-04-22 09:13:11.344 [order-service] ERROR trace_id=tr-881c AccessDeniedException: Access is denied path=/admin/reconcile user=guest
+2026-04-22 09:13:11.351 [order-service] ERROR trace_id=tr-881c InvalidCsrfTokenException: Invalid CSRF token found for http://api.demo.local/admin/reconcile
+2026-04-22 09:13:11.352 [order-service] WARN trace_id=tr-881c RequestRejectedException blocked suspicious header and path traversal probe
+2026-04-22 09:13:18.220 [order-service] ERROR trace_id=tr-881d node:child_process Error: spawn /usr/local/bin/report-export ENOENT
+2026-04-22 09:13:18.221 [order-service] ERROR trace_id=tr-881d child_process exec failed cmd="report-export --daily" code=ENOENT signal=null
+2026-04-22 09:13:26.911 [order-service] ERROR trace_id=tr-881e SQLSyntaxErrorException: You have an error in your SQL syntax near 'UNION SELECT * FROM users'
+2026-04-22 09:13:26.912 [order-service] WARN trace_id=tr-881e quoted string not properly terminated request_param=q%3D%27%20or%201%3D1--
+2026-04-22 09:13:34.053 [order-service] ERROR trace_id=tr-881f ParseErrorException: Encountered "#if" at line 33, column 7 in Velocity template billing_notice.vm
+2026-04-22 09:13:34.055 [order-service] ERROR trace_id=tr-881f TemplateInitException: failed to initialize template billing_notice.vm
+
+2026-04-22 09:14:01.002 [postgres] LOG connection authorized: user=app_rw database=ordersdb application_name=order-service source=postgres
+2026-04-22 09:14:03.220 [postgres] FATAL sorry, too many connections
+2026-04-22 09:14:03.221 [postgres] FATAL remaining connection slots are reserved for non-replication superuser connections
+2026-04-22 09:14:03.222 [postgres] HINT consider using a connection pool and review idle in transaction sessions
+2026-04-22 09:14:09.517 [postgres] ERROR deadlock detected
+2026-04-22 09:14:09.518 [postgres] DETAIL Process 9281 waits for ShareLock on transaction 842193; blocked by process 9177.
+2026-04-22 09:14:09.519 [postgres] CONTEXT while updating tuple (119,8) in relation "order_items"
+2026-04-22 09:14:09.520 [postgres] STATEMENT UPDATE order_items SET stock_locked=true WHERE order_id='O-100821' AND sku='SKU-998';
+2026-04-22 09:14:16.406 [postgres] FATAL password authentication failed for user "app_rw"
+2026-04-22 09:14:16.407 [postgres] FATAL no pg_hba.conf entry for host "10.0.8.31", user "app_rw", database "ordersdb", SSL off
+
+2026-04-22 09:15:01.116 [kernel] WARN Out of memory: Killed process 22117 (java) total-vm:4821120kB, anon-rss:2098432kB, file-rss:0kB, shmem-rss:0kB source=system
+2026-04-22 09:15:01.117 [kernel] ERROR oom-killer invoked by task kswapd0 due to memory pressure cgroup=/kubepods/burstable/pod-55b
+2026-04-22 09:15:08.004 [node-exporter] ERROR write /var/log/orders/archive/2026-04-22.log: no space left on device
+2026-04-22 09:15:08.006 [cron] WARN logrotate skipped because no space left on device and inode usage at 100%
+2026-04-22 09:15:11.970 [supervisor] ERROR permission denied while opening /etc/orders/secret.env user=svc-order
+2026-04-22 09:15:11.971 [supervisor] ERROR operation not permitted while binding to /var/run/orders.sock
+
+2026-04-22 09:16:01.880 [security] WARN User login failed(SSH) user=deploy source_ip=45.14.22.9 attempts=19
+2026-04-22 09:16:01.881 [security] WARN User login failed user=root source_ip=45.14.22.9 attempts=23
+2026-04-22 09:16:08.113 [sshd] ERROR error in libcrypto handshake_id=hx-3321 from=45.14.22.9
+2026-04-22 09:16:08.114 [sshd] ERROR Corrupted MAC on input from 45.14.22.9 port 60541
+
+2026-04-22 09:16:40.010 [dns] ERROR zone transfer failed for zone corp.demo.local from 10.20.1.12: denied AXFR from 10.20.1.12 source=system
+2026-04-22 09:16:40.011 [dns] WARN non-authoritative zone response for corp.demo.local serial mismatch
+
+2026-04-22 09:17:02.336 [gateway] INFO request_id=gw-9b91 client=10.10.4.20 route=/api/orders/status begin request
+2026-04-22 09:17:04.905 [gateway] ERROR request_id=gw-9b91 upstream timed out (110: Connection timed out) while reading response header from upstream
+2026-04-22 09:17:04.906 [gateway] WARN request_id=gw-9b91 status=504 gateway timeout
+2026-04-22 09:17:12.148 [order-service] ERROR trace_id=tr-88af java.net.ConnectException: Connection refused: connect downstream=inventory-core host=10.0.8.33 port=8088
+2026-04-22 09:17:12.149 [order-service] ERROR trace_id=tr-88af request timed out while waiting for inventory-core, read timeout 3000ms
+2026-04-22 09:17:19.200 [postgres] ERROR deadlock detected
+2026-04-22 09:17:19.201 [postgres] STATEMENT UPDATE orders SET status='PAID' WHERE id='O-100822';
+2026-04-22 09:17:24.500 [kernel] ERROR out of memory: Kill process 22440 (node) score 967 or sacrifice child
+2026-04-22 09:17:24.501 [node-exporter] ERROR write /tmp/report.pdf: no space left on device
+2026-04-22 09:17:24.502 [supervisor] ERROR permission denied while reading /data/keys/service.key
+
+2026-04-22 09:18:00.000 [summary] INFO incidents observed: upstream timed out, bad gateway, service unavailable, connection refused, read timeout, deadlock detected, too many connections, password authentication failed, no pg_hba.conf entry, out of memory, no space left on device, permission denied, AccessDeniedException, InvalidCsrfTokenException, child_process exec failed, SQL syntax error, ssh login failed, zone transfer failed

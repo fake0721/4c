@@ -73,6 +73,8 @@ const EMPTY_REPORT_DATA: AnalysisReportData = {
   detailRows: [],
 };
 
+const MAX_PROBLEM_TYPE_ITEMS = 8;
+
 function asIsoDate(value: string | null | undefined) {
   return value ?? new Date(0).toISOString();
 }
@@ -195,7 +197,7 @@ export async function getAnalysisReportData(logId?: string): Promise<AnalysisRep
 
   const sortedTypes = Array.from(typeCount.entries())
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
+    .slice(0, MAX_PROBLEM_TYPE_ITEMS);
 
   const totalIssues = errors.length;
   const highRiskCount = analyses.filter((item) => item.risk_level === "high").length;

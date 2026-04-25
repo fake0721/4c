@@ -78,63 +78,63 @@ export function DashboardTopbar({ avatarUrl, pendingReviewCount }: DashboardTopb
   }, [showPopup]);
 
   return (
-    <header className="absolute left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-[#D3DDE8] bg-[#FFFFFF]/76 px-8 backdrop-blur-xl md:left-64">
+    <header className="absolute left-0 right-0 top-0 z-50 flex h-16 items-center justify-between border-b border-[#D7E2F0] bg-[#FFFFFF]/82 px-8 backdrop-blur-xl md:left-64">
       <div className="flex items-center space-x-4">
-        <span className="font-medium text-[#5F6B7A]">{title.section}</span>
+        <span className="font-medium text-[#165DFF]">{title.section}</span>
         <span className="text-[#97A4B2]">/</span>
-        <span className="font-bold text-[#1F2A37]">{title.page}</span>
+        <span className="font-bold text-[#1D2129]">{title.page}</span>
       </div>
       <div className="flex items-center space-x-6">
         <div className="relative hidden lg:block">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[#7B8898]">search</span>
           <input
-            className="w-64 rounded-full border border-[#DCE4EE] bg-[#F4FFFB] py-1.5 pl-10 pr-4 text-sm text-[#1F2A37] outline-none transition-all placeholder:text-[#7B8898] focus:border-[#4E7FAA] focus:ring-1 focus:ring-[#1F4E79]/20"
+            className="w-64 rounded-full border border-[#DCE4EE] bg-[#F2F7FF] py-1.5 pl-10 pr-4 text-sm text-[#1D2129] outline-none transition-all placeholder:text-[#7B8898] focus:border-[#69B1FF] focus:ring-1 focus:ring-[#165DFF]/20"
             placeholder="搜索数据..."
             type="text"
           />
         </div>
         <div className="flex items-center space-x-4">
-          <button className="rounded-full p-2 text-[#5F6B7A] transition-colors hover:bg-[#E9EDF3] hover:text-[#1F2A37]" type="button">
+          <button className="rounded-full p-2 text-[#5F6B7A] transition-colors hover:bg-[#EAF2FF] hover:text-[#165DFF]" type="button">
             <span className="material-symbols-outlined">widgets</span>
           </button>
           <div ref={popupRef} className="relative">
             <button
-              className="relative rounded-full p-2 text-[#5F6B7A] transition-colors hover:bg-[#E9EDF3] hover:text-[#1F2A37]"
+              className="relative rounded-full p-2 text-[#5F6B7A] transition-colors hover:bg-[#FFF2E8] hover:text-[#FF7D00]"
               type="button"
               onClick={() => setShowPopup((value) => !value)}
             >
               <span className="material-symbols-outlined">notifications</span>
               {pendingReviewCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] rounded-full bg-[#FF7085] px-1 text-center text-[10px] leading-4 text-white">
+                <span className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] rounded-full bg-[#FF7D00] px-1 text-center text-[10px] leading-4 text-white">
                   {pendingReviewCount > 99 ? "99+" : pendingReviewCount}
                 </span>
               ) : null}
             </button>
             <div
-              className={`absolute right-0 top-full z-[80] mt-2 w-80 rounded-2xl border border-[#1F4E79]/30 bg-[#FFFFFF]/95 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.18)] backdrop-blur-xl ${
+              className={`absolute right-0 top-full z-[80] mt-2 w-80 rounded-2xl border border-[#D7E2F0] bg-[#FFFFFF]/95 p-4 shadow-[0_12px_30px_rgba(29,33,41,0.18)] backdrop-blur-xl ${
                 showPopup ? "block" : "hidden"
               }`}
             >
               <div className="flex items-start gap-3">
-                <span className="material-symbols-outlined mt-0.5 text-[#1F4E79]" style={{ fontVariationSettings: '"FILL" 1' }}>
+                <span className="material-symbols-outlined mt-0.5 text-[#165DFF]" style={{ fontVariationSettings: '"FILL" 1' }}>
                   notification_important
                 </span>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-[#1F2A37]">人工复核提醒</p>
-                  <p className="mt-1 text-xs text-[#5F6B7A]">
+                  <p className="text-sm font-bold text-[#1D2129]">人工复核提醒</p>
+                  <p className="mt-1 text-xs text-[#4E5969]">
                     {pendingReviewCount > 0 ? `当前有 ${pendingReviewCount} 条问题需要人工复核` : "当前没有待人工复核的问题"}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <Link
                       href="/dashboard/reviews"
-                      className="rounded-lg bg-[#1F4E79]/20 px-3 py-1.5 text-xs font-bold text-[#1F4E79] transition-all hover:bg-[#1F4E79]/30"
+                      className="rounded-lg bg-[#EAF2FF] px-3 py-1.5 text-xs font-bold text-[#165DFF] transition-all hover:bg-[#DDEBFF]"
                     >
                       去处理
                     </Link>
                     <button
                       type="button"
                       onClick={() => setShowPopup(false)}
-                      className="rounded-lg bg-[#E9EDF3] px-3 py-1.5 text-xs text-[#5F6B7A] transition-all hover:bg-[#DCE4EE]"
+                      className="rounded-lg bg-[#FFF2E8] px-3 py-1.5 text-xs text-[#B65A00] transition-all hover:bg-[#FFE7D3]"
                     >
                       稍后
                     </button>

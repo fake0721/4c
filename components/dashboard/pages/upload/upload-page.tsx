@@ -269,7 +269,6 @@ export function UploadPage({ selectableRules, llmReady, llmProvider, llmStatusMe
 
 function UploadPendingOverlay({ submitIntent }: { submitIntent: "single" | "triple_compare" }) {
   const { pending } = useFormStatus();
-  const [progress, setProgress] = useState(8);
   const [phaseIndex, setPhaseIndex] = useState(0);
 
   useEffect(() => {
@@ -286,25 +285,13 @@ function UploadPendingOverlay({ submitIntent }: { submitIntent: "single" | "trip
           ]
         : ["上传日志中", "规则检测中", "模型推理中", "写入结果中"];
 
-    let localProgress = 8;
     const timer = window.setInterval(() => {
-      setProgress(() => {
-        const current = localProgress;
-        const ceiling = 95;
-        if (current >= ceiling) {
-          return ceiling;
+      setPhaseIndex((phasePrev) => {
+        if (phasePrev >= phases.length - 1) {
+          return phasePrev;
         }
 
-        const remain = ceiling - current;
-        const baseStep = submitIntent === "triple_compare" ? 1.4 : 2.1;
-        const step = Math.max(0.6, Math.min(baseStep + Math.random() * 1.8, remain * 0.35));
-        const next = Number((current + step).toFixed(1));
-        localProgress = next;
-        setPhaseIndex((phasePrev) => {
-          const phaseTarget = Math.min(phases.length - 1, Math.floor((next / 100) * phases.length));
-          return Math.max(phasePrev, phaseTarget);
-        });
-        return next;
+        return phasePrev + 1;
       });
     }, 420);
 
@@ -345,15 +332,9 @@ function UploadPendingOverlay({ submitIntent }: { submitIntent: "single" | "trip
           </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[#E7EEF6]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[#1F4E79] via-[#4E7FAA] to-[#7A4A1B] transition-[width] duration-400 ease-out"
-              style={{ width: `${Math.max(6, Math.min(95, progress))}%` }}
-            />
-          </div>
+        <div className="space-y-4">
           <p className="text-center text-xs font-medium text-[#5F6B7A]">
-            {phases[Math.min(phaseIndex, phases.length - 1)]} · {Math.round(progress)}%
+            {phases[Math.min(phaseIndex, phases.length - 1)]}
           </p>
           <div className="flex items-center justify-center gap-2 pt-1">
             <span className="h-2.5 w-2.5 animate-bounce rounded-full bg-[#1F4E79]" />

@@ -33,6 +33,7 @@ export async function POST(request: Request) {
   const file = formData.get("logFile");
   const sourceType = getTrimmedValue(formData, "sourceType") || "custom";
   const analysisMode = normalizeAnalysisMode(getTrimmedValue(formData, "analysisMode"));
+  const ruleSelectionProvided = getTrimmedValue(formData, "ruleSelectionProvided") === "1";
   const selectedRuleIds = formData
     .getAll("selectedRuleIds")
     .map((item) => String(item ?? "").trim())
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
     .filter((item) => item.startsWith("knowledge:"))
     .map((item) => item.slice("knowledge:".length))
     .filter(Boolean);
+  const selectedDetectionRuleIdsForRun = ruleSelectionProvided ? selectedDetectionRuleIds : undefined;
+  const selectedKnowledgeIdsForRun = ruleSelectionProvided ? selectedKnowledgeIds : undefined;
 
   if (!(file instanceof File) || file.size === 0) {
     return NextResponse.json({ error: "Please choose a log file first." }, { status: 400 });
@@ -58,8 +61,8 @@ export async function POST(request: Request) {
       file,
       sourceType,
       analysisMode,
-      selectedRuleIds: selectedDetectionRuleIds,
-      selectedKnowledgeIds,
+      selectedRuleIds: selectedDetectionRuleIdsForRun,
+      selectedKnowledgeIds: selectedKnowledgeIdsForRun,
       logBucket,
     });
 

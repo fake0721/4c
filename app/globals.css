@@ -2,8 +2,8 @@
 
 /* 基础设置 */
 :root {
-  --background: #f3f5f8;
-  --foreground: #1f2a37;
+  --background: #f5f7fa;
+  --foreground: #1d2129;
   --font-manrope:
     "Avenir Next",
     "Segoe UI",
@@ -97,40 +97,40 @@ body {
   bottom: -10%;
   border-radius: 45% 55% 40% 60% / 60% 45% 55% 40%;
   filter: blur(52px) saturate(160%);
-  opacity: 0.72;
-  mix-blend-mode: screen;
+  opacity: 0.45;
+  mix-blend-mode: normal;
   transform-origin: center;
   will-change: transform, opacity;
 }
 
 .aurora-band--blue {
-  background: radial-gradient(ellipse at center, rgba(91, 143, 185, 0.28) 0%, rgba(91, 143, 185, 0.0) 58%);
-  opacity: 0.42;
+  background: radial-gradient(ellipse at center, rgba(22, 93, 255, 0.2) 0%, rgba(22, 93, 255, 0.0) 58%);
+  opacity: 0.28;
   animation: auroraDriftA 19s ease-in-out infinite alternate;
 }
 
 .aurora-band--purple {
-  background: radial-gradient(ellipse at center, rgba(74, 109, 146, 0.26) 0%, rgba(74, 109, 146, 0.06) 48%, rgba(74, 109, 146, 0.0) 64%);
+  background: radial-gradient(ellipse at center, rgba(105, 177, 255, 0.2) 0%, rgba(105, 177, 255, 0.06) 48%, rgba(105, 177, 255, 0.0) 64%);
   left: -22%;
   width: 112%;
   bottom: -13%;
-  opacity: 0.38;
+  opacity: 0.24;
   animation: auroraDriftB 23s ease-in-out infinite alternate;
 }
 
 .aurora-band--green {
-  background: radial-gradient(ellipse at center, rgba(123, 136, 152, 0.24) 0%, rgba(123, 136, 152, 0.06) 46%, rgba(123, 136, 152, 0.0) 62%);
+  background: radial-gradient(ellipse at center, rgba(255, 125, 0, 0.14) 0%, rgba(255, 125, 0, 0.04) 46%, rgba(255, 125, 0, 0.0) 62%);
   left: 2%;
   width: 108%;
   bottom: -16%;
-  opacity: 0.34;
+  opacity: 0.22;
   animation: auroraDriftC 27s ease-in-out infinite alternate;
 }
 
 .aurora-fade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(243, 245, 248, 0.0) 0%, rgba(243, 245, 248, 0.72) 78%, rgba(243, 245, 248, 0.95) 100%);
+  background: linear-gradient(to top, rgba(245, 247, 250, 0.08) 0%, rgba(245, 247, 250, 0.86) 78%, rgba(245, 247, 250, 0.98) 100%);
 }
 
 @keyframes auroraDriftA {
@@ -163,7 +163,7 @@ body {
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(31, 78, 121, 0.14);
+  border: 1px solid rgba(22, 93, 255, 0.18);
   border-radius: 12px;
 }
 
@@ -171,20 +171,20 @@ body {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(31, 78, 121, 0.1);
+  border: 1px solid rgba(22, 93, 255, 0.14);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
 
 .glass-card:hover {
   background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(31, 78, 121, 0.2);
-  box-shadow: 0 8px 24px rgba(24, 41, 62, 0.1);
+  border-color: rgba(22, 93, 255, 0.32);
+  box-shadow: 0 8px 24px rgba(29, 33, 41, 0.12);
 }
 
 .dashboard-mocha-surface .glass-panel,
 .dashboard-mocha-surface .glass-card {
-  color: #1f2a37;
+  color: #1d2129;
 }
 
 .dashboard-mocha-surface .glass-panel {
@@ -206,12 +206,12 @@ body {
 .dashboard-mocha-surface .glass-card .text-white\/80,
 .dashboard-mocha-surface .glass-panel .text-white\/70,
 .dashboard-mocha-surface .glass-card .text-white\/70 {
-  color: #1f2a37 !important;
+  color: #1d2129 !important;
 }
 
 .dashboard-mocha-surface .glass-panel .text-white\/60,
 .dashboard-mocha-surface .glass-card .text-white\/60 {
-  color: #5f6b7a !important;
+  color: #4e5969 !important;
 }
 
 .dashboard-mocha-surface .glass-panel .text-white\/50,
@@ -220,48 +220,48 @@ body {
 .dashboard-mocha-surface .glass-card .text-white\/40,
 .dashboard-mocha-surface .glass-panel .text-white\/30,
 .dashboard-mocha-surface .glass-card .text-white\/30 {
-  color: #5f6b7a !important;
+  color: #4e5969 !important;
 }
 
 .dashboard-mocha-surface .status-completed {
-  color: #2f6a9a !important;
+  color: #165dff !important;
 }
 
 .dashboard-mocha-surface .status-progress {
-  color: #9a7a2d !important;
+  color: #ff7d00 !important;
 }
 
 .dashboard-mocha-surface .status-failed {
-  color: #b45151 !important;
+  color: #b13b3b !important;
 }
 
 .dashboard-mocha-surface .risk-high {
-  background: rgba(180, 81, 81, 0.12);
-  color: #b45151 !important;
-  border: 1px solid rgba(180, 81, 81, 0.28);
+  background: rgba(177, 59, 59, 0.12);
+  color: #b13b3b !important;
+  border: 1px solid rgba(177, 59, 59, 0.3);
 }
 
 .dashboard-mocha-surface .risk-medium {
-  background: rgba(154, 122, 45, 0.12);
-  color: #9a7a2d !important;
-  border: 1px solid rgba(154, 122, 45, 0.28);
+  background: rgba(255, 125, 0, 0.12);
+  color: #ff7d00 !important;
+  border: 1px solid rgba(255, 125, 0, 0.3);
 }
 
 .dashboard-mocha-surface .risk-low {
-  background: rgba(47, 106, 154, 0.12);
-  color: #2f6a9a !important;
-  border: 1px solid rgba(47, 106, 154, 0.28);
+  background: rgba(105, 177, 255, 0.18);
+  color: #165dff !important;
+  border: 1px solid rgba(105, 177, 255, 0.42);
 }
 
 /* Shiny Text */
 .shiny-text {
   background-image: linear-gradient(
     120deg,
-    #1F2A37 0%,
-    #1F2A37 35%,
-    #FFFFFF 50%,
-    #1F2A37 65%,
-    #1F2A37 100%
+    #1d2129 0%,
+    #1d2129 35%,
+    #ff7d00 50%,
+    #1d2129 65%,
+    #1d2129 100%
   );
   background-size: 200% auto;
   background-position: 150% center;
@@ -291,40 +291,40 @@ body {
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 1rem;
-  color: #1F2A37;
+  color: #1d2129;
 }
 
 .section-subtitle {
   font-size: 1.125rem;
   line-height: 1.75rem;
-  color: #5F6B7A;
+  color: #4e5969;
   margin-bottom: 2rem;
 }
 
 /* 旧版深色/棕色 Tailwind 类兼容映射，确保历史页面也切到正式配色 */
 [class*="radial-gradient(circle_at_top_left,_rgba(34,211,238,0.12)"] {
-  background: radial-gradient(circle at top left, rgba(58, 106, 154, 0.2), transparent 32%),
-    linear-gradient(180deg, #f3f5f8 0%, #ffffff 58%, #eef2f7 100%) !important;
+  background: radial-gradient(circle at top left, rgba(22, 93, 255, 0.16), transparent 32%),
+    linear-gradient(180deg, #f5f7fa 0%, #ffffff 58%, #eef4ff 100%) !important;
 }
 
 [class*="text-slate-"],
 [class*="text-white"] {
-  color: #1f2a37 !important;
+  color: #1d2129 !important;
 }
 
 [class*="text-cyan-"],
 [class*="text-emerald-"] {
-  color: #2f6a9a !important;
+  color: #165dff !important;
 }
 
 [class*="text-amber-"],
 [class*="text-yellow-"] {
-  color: #9a7a2d !important;
+  color: #ff7d00 !important;
 }
 
 [class*="text-rose-"],
 [class*="text-red-"] {
-  color: #b45151 !important;
+  color: #b13b3b !important;
 }
 
 [class*="bg-slate-"],
@@ -334,18 +334,18 @@ body {
 
 [class*="bg-cyan-"],
 [class*="bg-emerald-"] {
-  background-color: rgba(58, 106, 154, 0.16) !important;
+  background-color: rgba(105, 177, 255, 0.2) !important;
 }
 
 [class*="border-white/"],
 [class*="border-slate-"],
 [class*="border-cyan-"] {
-  border-color: rgba(58, 106, 154, 0.28) !important;
+  border-color: rgba(22, 93, 255, 0.28) !important;
 }
 
 [class*="ring-cyan-"],
 [class*="ring-white/"] {
-  --tw-ring-color: rgba(58, 106, 154, 0.24) !important;
+  --tw-ring-color: rgba(22, 93, 255, 0.24) !important;
 }
 
 [class*="hover:bg-cyan-"]:hover,
@@ -356,12 +356,95 @@ body {
 
 [class*="hover:border-cyan-"]:hover,
 [class*="hover:border-white/"]:hover {
-  border-color: rgba(31, 78, 121, 0.45) !important;
+  border-color: rgba(22, 93, 255, 0.48) !important;
 }
 
 [class*="file:bg-cyan-"]::file-selector-button {
-  background-color: #3a6a9a !important;
+  background-color: #165dff !important;
   color: #ffffff !important;
+}
+
+/* 历史十六进制色值的全局替换，避免逐页改造 */
+[class~="text-[#1F2A37]"],
+[class~="text-[#1f2a37]"] {
+  color: #1d2129 !important;
+}
+
+[class~="text-[#5F6B7A]"],
+[class~="text-[#5f6b7a]"] {
+  color: #4e5969 !important;
+}
+
+[class~="text-[#1F4E79]"],
+[class~="text-[#1f4e79]"],
+[class~="text-[#3A6A9A]"],
+[class~="text-[#3a6a9a]"],
+[class~="text-[#5B8FB9]"],
+[class~="text-[#5b8fb9]"] {
+  color: #165dff !important;
+}
+
+[class~="text-[#0F766E]"],
+[class~="text-[#0f766e]"] {
+  color: #69b1ff !important;
+}
+
+[class~="bg-[#F3F5F8]"],
+[class~="bg-[#f3f5f8]"] {
+  background-color: #f5f7fa !important;
+}
+
+[class~="bg-[#E9EDF3]"],
+[class~="bg-[#e9edf3]"],
+[class~="bg-[#F8FAFC]"],
+[class~="bg-[#f8fafc]"],
+[class~="bg-[#F7F9FC]"],
+[class~="bg-[#f7f9fc]"],
+[class~="bg-[#F8FBFF]"],
+[class~="bg-[#f8fbff]"] {
+  background-color: #ecf2ff !important;
+}
+
+[class~="bg-[#1F4E79]"],
+[class~="bg-[#1f4e79]"],
+[class~="bg-[#3A6A9A]"],
+[class~="bg-[#3a6a9a]"],
+[class~="bg-[#5B8FB9]"],
+[class~="bg-[#5b8fb9]"] {
+  background-color: #165dff !important;
+}
+
+[class~="bg-[#0F766E]"],
+[class~="bg-[#0f766e]"] {
+  background-color: #69b1ff !important;
+}
+
+[class*="hover:bg-[#173d61]"]:hover,
+[class*="hover:bg-[#173D61]"]:hover {
+  background-color: #0e42d2 !important;
+}
+
+[class*="border-[#CBD7E4]"],
+[class*="border-[#cbd7e4]"],
+[class*="border-[#DCE4EE]"],
+[class*="border-[#dce4ee]"],
+[class*="border-[#C4D2E3]"],
+[class*="border-[#c4d2e3]"],
+[class*="border-[#CFD8E4]"],
+[class*="border-[#cfd8e4]"] {
+  border-color: #d7e2f0 !important;
+}
+
+[class*="focus:border-[#1F4E79]"]:focus,
+[class*="focus:border-[#1f4e79]"]:focus,
+[class*="focus:border-[#5B8FB9]"]:focus,
+[class*="focus:border-[#5b8fb9]"]:focus {
+  border-color: #165dff !important;
+}
+
+[class*="focus:ring-[#1F4E79]/20"]:focus,
+[class*="focus:ring-[#1f4e79]/20"]:focus {
+  --tw-ring-color: rgba(22, 93, 255, 0.24) !important;
 }
 
 /* 响应式 */

@@ -24,5 +24,6 @@ export type IncidentAnalysisInput = {
   incident: DetectedIncident;
   sourceType: string;
   logContent: string;
+  analysisMode?: "rule_only" | "model_only" | "hybrid";
   ragContext?: RagContextItem[];
 };

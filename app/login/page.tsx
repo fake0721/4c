@@ -3,7 +3,6 @@ import { signInAction } from "@/app/auth/actions";
 import { AuthNotice } from "@/components/auth/auth-notice";
 import { LoginSessionReset } from "@/components/auth/login-session-reset";
 import { hasSupabaseEnv } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server-client";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -17,11 +16,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const configured = hasSupabaseEnv();
   const shouldClearSession = params.clear === "1";
-
-  if (configured) {
-    const supabase = await createClient();
-    await supabase.auth.signOut({ scope: "local" });
-  }
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#F3F5F8] text-[#1F2A37]">

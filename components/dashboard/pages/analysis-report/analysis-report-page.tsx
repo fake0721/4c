@@ -8,6 +8,37 @@ type AnalysisReportPageProps = {
   data: AnalysisReportData;
 };
 
+const RISK_VISUALS = {
+  高风险: {
+    color: "#D84B3E",
+    fill: "#FFF0ED",
+    border: "#F2C1BA",
+    text: "#A12F24",
+    shadow: "0 14px 32px rgba(216,75,62,0.16)",
+  },
+  中风险: {
+    color: "#C88922",
+    fill: "#FFF7E8",
+    border: "#ECD2A2",
+    text: "#8B5B10",
+    shadow: "0 12px 28px rgba(200,137,34,0.12)",
+  },
+  低风险: {
+    color: "#2F8F7F",
+    fill: "#EAF7F3",
+    border: "#BEE0D6",
+    text: "#21685C",
+    shadow: "0 12px 26px rgba(47,143,127,0.1)",
+  },
+  默认: {
+    color: "#6C7C8F",
+    fill: "#F4F7FA",
+    border: "#D7E0E9",
+    text: "#4E5D70",
+    shadow: "0 10px 24px rgba(108,124,143,0.08)",
+  },
+} as const;
+
 export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
   const router = useRouter();
   const isProcessing = data.log.status === "processing";
@@ -31,9 +62,9 @@ export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
 
   const riskItems = useMemo(
     () => [
-      { label: "高风险", count: data.riskDistribution.high, color: "#E05B4C" },
-      { label: "中风险", count: data.riskDistribution.medium, color: "#D8A94A" },
-      { label: "低风险", count: data.riskDistribution.low, color: "#6BAE7A" },
+      { label: "高风险", count: data.riskDistribution.high, color: RISK_VISUALS.高风险.color },
+      { label: "中风险", count: data.riskDistribution.medium, color: RISK_VISUALS.中风险.color },
+      { label: "低风险", count: data.riskDistribution.low, color: RISK_VISUALS.低风险.color },
     ],
     [data.riskDistribution.high, data.riskDistribution.low, data.riskDistribution.medium],
   );
@@ -183,28 +214,37 @@ export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
         <SummaryCard label="问题总数" value={String(data.summary.totalIssues)} hint="已识别异常样本" accent="default" />
         <SummaryCard label="高风险问题数" value={String(data.summary.highRiskCount)} hint="需优先处理" accent="warning" />
         <SummaryCard label="主要异常类型" value={data.summary.topType} hint={`出现次数 ${data.summary.topTypeCount}`} accent="soft" />
-        <SummaryCard label="建议优先处理项" value={truncateText(data.summary.topSuggestion, 26)} hint={`平均置信度 ${confidencePercent}%`} accent="primary" />
+        <SummaryCard label="建议优先处理项" value={data.summary.topSuggestion} hint={`平均置信度 ${confidencePercent}%`} accent="primary" />
       </section>
 
       <section className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-12" data-pdf-section="distribution">
         <div className="glass-card rounded-2xl p-8 xl:col-span-7">
           <h2 className="mb-8 flex items-center gap-2 text-lg font-bold text-[#1F2A37]">
-            <span className="material-symbols-outlined text-[#1F4E79]">bar_chart</span>
+            <span className="material-symbols-outlined text-[#5D7B97]">bar_chart</span>
             问题类型分布
           </h2>
           <div className="space-y-6">
             {data.problemTypes.length > 0 ? (
-              data.problemTypes.map((item) => (
+              data.problemTypes.map((item, index) => {
+                const tone = TYPE_DISTRIBUTION_TONES[index % TYPE_DISTRIBUTION_TONES.length];
+                return (
                 <div key={item.name} className="space-y-2">
                   <div className="flex justify-between text-xs font-label uppercase tracking-wider text-[#7B8898]">
                     <span>{item.name}</span>
-                    <span>{`${item.count} (${item.percent}%)`}</span>
+                    <span style={{ color: tone.text }}>{`${item.count} (${item.percent}%)`}</span>
                   </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#E6D9C7]">
-                    <div className="h-full rounded-full bg-[#1F4E79]" style={{ width: `${Math.max(item.percent, 4)}%` }} />
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-[#E7EEF5]">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.max(item.percent, 4)}%`,
+                        background: `linear-gradient(90deg, ${tone.start}, ${tone.end})`,
+                      }}
+                    />
                   </div>
                 </div>
-              ))
+              );
+              })
             ) : (
               <div className="rounded-2xl border border-dashed border-[#CBD7E4] bg-[#F4FFFB] px-6 py-10 text-center text-sm text-[#7B8898]">暂无问题类型分布数据</div>
             )}
@@ -213,27 +253,47 @@ export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
 
         <div className="glass-card flex flex-col rounded-2xl p-8 xl:col-span-5">
           <h2 className="mb-8 flex items-center gap-2 text-lg font-bold text-[#1F2A37]">
-            <span className="material-symbols-outlined text-[#1F4E79]">donut_large</span>
+            <span className="material-symbols-outlined text-[#D84B3E]">donut_large</span>
             风险等级分布
           </h2>
           <div className="flex flex-1 flex-col justify-center gap-6 md:flex-row md:items-center">
             <div
-              className="relative mx-auto flex h-40 w-40 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]"
+              className="relative mx-auto flex h-40 w-40 items-center justify-center rounded-full shadow-[0_24px_48px_rgba(216,75,62,0.14),inset_0_0_0_1px_rgba(255,255,255,0.34)]"
               style={{ background: riskGradient }}
             >
-              <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full bg-[#FCF8F1] shadow-[0_8px_20px_rgba(31,59,53,0.08)]">
+              <div className="flex h-24 w-24 flex-col items-center justify-center rounded-full border border-white/70 bg-[#FFFDFC] shadow-[0_12px_30px_rgba(31,59,53,0.08)]">
                 <div className="font-headline text-3xl font-black text-[#1F2A37]">{data.summary.totalIssues}</div>
                 <div className="mt-1 text-xs uppercase tracking-[0.22em] text-[#7B8898]">总问题数</div>
               </div>
             </div>
             <div className="space-y-4">
-              {riskItems.map((item) => (
-                <div key={item.label} className="flex items-center gap-3 text-sm text-[#5F6B7A]">
-                  <span className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span>{`${item.label} (${item.count})`}</span>
-                  <span className="font-label text-xs uppercase tracking-[0.16em] text-[#7B8898]">{`${Math.round((item.count / totalRisk) * 100)}%`}</span>
-                </div>
-              ))}
+              {riskItems.map((item) => {
+                const visual = riskBadgeColors(item.label);
+                return (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-2xl border px-4 py-3"
+                    style={{
+                      backgroundColor: visual.fill,
+                      borderColor: visual.border,
+                      boxShadow: visual.shadow,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <div>
+                        <div className="text-sm font-bold" style={{ color: visual.text }}>
+                          {item.label}
+                        </div>
+                        <div className="text-xs text-[#6E7C8B]">{`${item.count} 个问题`}</div>
+                      </div>
+                    </div>
+                    <span className="text-sm font-black" style={{ color: visual.text }}>
+                      {`${Math.round((item.count / totalRisk) * 100)}%`}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -279,7 +339,14 @@ export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-xl font-bold text-[#1F2A37]">{item.type}</h3>
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${item.riskLabel === "高风险" ? "bg-[#FFE2E6] text-[#9B1B30]" : item.riskLabel === "中风险" ? "bg-[#FFF5DE] text-[#8A6A24]" : "bg-[#E8F4EC] text-[#2F6A42]"}`}>
+                    <span
+                      className="inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold"
+                      style={{
+                        backgroundColor: riskBadgeColors(item.riskLabel).fill,
+                        borderColor: riskBadgeColors(item.riskLabel).border,
+                        color: riskBadgeColors(item.riskLabel).text,
+                      }}
+                    >
                       {item.riskLabel}
                     </span>
                     <span className="inline-flex items-center rounded-full bg-[#E9EDF3] px-3 py-1 text-xs text-[#5F6B7A]">{`置信度 ${Math.round(item.confidence * 100)}%`}</span>
@@ -313,6 +380,7 @@ export function AnalysisReportPage({ data }: AnalysisReportPageProps) {
 }
 
 function SummaryCard({ label, value, hint, accent }: { label: string; value: string; hint: string; accent: "default" | "warning" | "soft" | "primary" }) {
+  const [expanded, setExpanded] = useState(false);
   const accentClass =
     accent === "warning"
       ? "border-l-4 border-[#E68A17]"
@@ -320,12 +388,27 @@ function SummaryCard({ label, value, hint, accent }: { label: string; value: str
         ? "border border-[#1F4E79]/20"
         : "";
   const valueClass = accent === "warning" ? "text-[#E68A17]" : accent === "primary" ? "text-[#1F4E79]" : "text-[#1F2A37]";
+  const showAsNarrative = accent === "primary" && value.length > 20;
+  const canToggle = showAsNarrative && value.length > 24;
+  const displayValue = canToggle && !expanded ? `${value.slice(0, 24)}...` : value;
+  const valueSizeClass = showAsNarrative ? "text-[clamp(1.1rem,1.35vw,1.55rem)] leading-[1.45]" : "text-4xl leading-none";
+  const valueContainerClass = showAsNarrative && expanded ? "max-h-36 overflow-y-auto pr-1" : "";
+  const valueWeightClass = showAsNarrative ? "font-bold" : "font-black";
 
   return (
     <div className={`glass-card relative overflow-hidden rounded-2xl p-6 ${accentClass}`}>
       <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-[#1F4E79]/10 blur-3xl" />
       <p className="mb-2 font-label text-xs uppercase tracking-widest text-[#7B8898]">{label}</p>
-      <h3 className={`font-headline text-4xl font-black ${valueClass}`}>{value}</h3>
+      <h3 className={`font-headline break-words whitespace-normal ${valueClass} ${valueSizeClass} ${valueContainerClass} ${valueWeightClass}`}>{displayValue}</h3>
+      {canToggle ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((prev) => !prev)}
+          className="mt-2 text-xs font-semibold text-[#165DFF] transition-colors hover:text-[#0E42D2]"
+        >
+          {expanded ? "收起" : "展开"}
+        </button>
+      ) : null}
       <div className="mt-4 text-xs text-[#7B8898]">{hint}</div>
     </div>
   );
@@ -362,6 +445,14 @@ const PDF_THEME = {
   panel: "#FBF8F3",
   panelStrong: "#F5EEE5",
 };
+
+const TYPE_DISTRIBUTION_TONES = [
+  { start: "#5D7B97", end: "#87A3BD", text: "#496580" },
+  { start: "#6B89A3", end: "#99B5CC", text: "#56738E" },
+  { start: "#7896AE", end: "#ADC2D7", text: "#607B95" },
+  { start: "#64839D", end: "#93AEC7", text: "#4F6C86" },
+  { start: "#819BB3", end: "#B7CADE", text: "#687F98" },
+];
 
 function buildAnalysisReportPdfPages({ data, confidencePercent, totalRisk, riskItems }: PdfBuildInput) {
   const pages: PdfPageState[] = [createPdfPage()];
@@ -1040,12 +1131,15 @@ function drawBadge(
 
 function riskBadgeColors(riskLabel: string) {
   if (riskLabel === "高风险") {
-    return { fill: "#FFE2E6", text: "#9B1B30", border: "#F4B7C1" };
+    return RISK_VISUALS.高风险;
   }
   if (riskLabel === "中风险") {
-    return { fill: "#FFF5DE", text: "#8A6A24", border: "#E8D3A1" };
+    return RISK_VISUALS.中风险;
   }
-  return { fill: "#E8F4EC", text: "#2F6A42", border: "#BFDDC9" };
+  if (riskLabel === "低风险") {
+    return RISK_VISUALS.低风险;
+  }
+  return RISK_VISUALS.默认;
 }
 
 function truncateText(value: string, maxLength: number) {

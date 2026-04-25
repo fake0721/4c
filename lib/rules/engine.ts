@@ -40,10 +40,60 @@ function matchesRule(line: string, rule: DetectionRule) {
   }
 
   if (rule.matchType === "regex") {
-    return new RegExp(rule.pattern, rule.flags).test(line);
+    try {
+      return new RegExp(rule.pattern, rule.flags).test(line);
+    } catch {
+      return false;
+    }
   }
 
   return false;
+}
+
+const DEPRIORITIZED_GENERIC_RULE_IDS = new Set(["generic-error", "generic-exception"]);
+
+function getRuleSpecificityScore(rule: DetectionRule) {
+  let score = 0;
+
+  // Prefer specific classifications over unknown fallback rules.
+  score += rule.errorType === "unknown_error" ? -60 : 80;
+
+  if (rule.riskLevel === "high") {
+    score += 24;
+  } else if (rule.riskLevel === "medium") {
+    score += 12;
+  }
+
+  score += rule.matchType === "regex" ? 10 : 4;
+  score += Math.min(20, Math.floor(rule.pattern.length / 8));
+
+  if (DEPRIORITIZED_GENERIC_RULE_IDS.has(rule.id)) {
+    score -= 90;
+  }
+
+  return score;
+}
+
+function selectBestMatchedRule(line: string, rules: DetectionRule[]) {
+  const matchedRules = rules.filter((rule) => matchesRule(line, rule));
+
+  if (matchedRules.length === 0) {
+    return null;
+  }
+
+  return matchedRules.reduce((best, current) => {
+    if (!best) {
+      return current;
+    }
+
+    return getRuleSpecificityScore(current) > getRuleSpecificScore(best)
+      ? current
+      : best;
+  }, null as DetectionRule | null);
+}
+
+function getRuleSpecificScore(rule: DetectionRule) {
+  return getRuleSpecificityScore(rule);
 }
 
 function isStackTraceNoiseLine(line: string) {
@@ -109,7 +159,7 @@ export function detectLogIncidents(
       return;
     }
 
-    const matchedRule = rules.find((rule) => matchesRule(normalizedLine, rule));
+    const matchedRule = selectBestMatchedRule(normalizedLine, rules);
 
     if (!matchedRule) {
       return;

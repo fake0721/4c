@@ -380,6 +380,11 @@ function normalizeReviewNoteInput(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function isMissingReviewCaseRevisionsTableError(message: string | null | undefined) {
+  const text = String(message ?? "");
+  return /review_case_revisions/i.test(text) && /(schema cache|could not find the table)/i.test(text);
+}
+
 async function listRecentReviewCaseRevisionSummaries(params: {
   supabase: DashboardSupabaseClient;
   reviewCaseId: string;
@@ -396,6 +401,10 @@ async function listRecentReviewCaseRevisionSummaries(params: {
     .limit(limit);
 
   if (error) {
+    if (isMissingReviewCaseRevisionsTableError(error.message)) {
+      return [];
+    }
+
     throw new Error(error.message);
   }
 
@@ -1853,6 +1862,26 @@ export async function POST(request: Request) {
       });
 
     if (revisionInsertError) {
+      if (isMissingReviewCaseRevisionsTableError(revisionInsertError.message)) {
+        await syncHistoricalMissedCaseFromReviewCase({
+          supabase,
+          reviewCaseId,
+          fallbackErrorType: updatedReviewCase.final_error_type,
+        });
+
+        const historyRow = await getHistoryCaseRowByReviewCaseId(reviewCaseId);
+        if (!historyRow) {
+          return NextResponse.json({ error: "复盘记录更新后读取失败。" }, { status: 500 });
+        }
+
+        return NextResponse.json({
+          ok: true,
+          row: historyRow,
+          revisions: [],
+          message: "重新复盘已保存，但当前环境尚未启用修改轨迹记录。",
+        });
+      }
+
       const { data: rolledBackReviewCase, error: rollbackError } = await supabase
         .from("review_cases")
         .update({
@@ -2403,7 +2432,6 @@ function inferTemplateFormatFromFileName(fileName: string) {
   if (ext === "txt" || ext === "md") return "TEXT";
   return ext ? ext.toUpperCase() : "FILE";
 }
-
 
 
 

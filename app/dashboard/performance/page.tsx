@@ -1,6 +1,9 @@
 ﻿import { PerformancePage } from "@/components/dashboard/pages/performance/performance-page";
 import { getPerformancePageData } from "@/lib/dashboard/performance";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type DashboardPerformancePageProps = {
   searchParams?: Promise<{
     days?: string;
